@@ -23,7 +23,6 @@
 #include <utils/TypeHelpers.h>
 
 #include <minikin/MinikinRefCounted.h>
-#include <minikin/SparseBitSet.h>
 
 namespace android {
 
@@ -140,9 +139,6 @@ public:
     size_t getNumFonts() const;
     MinikinFont* getFont(size_t index) const;
     FontStyle getStyle(size_t index) const;
-
-    // Get Unicode coverage. Lifetime of returned bitset is same as receiver.
-    const SparseBitSet* getCoverage();
 private:
     void addFontLocked(MinikinFont* typeface, FontStyle style);
 
@@ -156,9 +152,6 @@ private:
     FontLanguage mLang;
     int mVariant;
     std::vector<Font> mFonts;
-
-    SparseBitSet mCoverage;
-    bool mCoverageValid;
 };
 
 }  // namespace android

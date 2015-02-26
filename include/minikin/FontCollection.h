@@ -21,6 +21,7 @@
 
 #include <minikin/MinikinRefCounted.h>
 #include <minikin/MinikinFont.h>
+#include <minikin/SparseBitSet.h>
 #include <minikin/FontFamily.h>
 
 namespace android {
@@ -51,12 +52,17 @@ private:
     static const int kLogCharsPerPage = 8;
     static const int kPageMask = (1 << kLogCharsPerPage) - 1;
 
+    struct FontInstance {
+        SparseBitSet* mCoverage;
+        FontFamily* mFamily;
+    };
+
     struct Range {
         size_t start;
         size_t end;
     };
 
-    FontFamily* getFamilyForChar(uint32_t ch, FontLanguage lang, int variant) const;
+    const FontInstance* getInstanceForChar(uint32_t ch, FontLanguage lang, int variant) const;
 
     // static for allocating unique id's
     static uint32_t sNextId;
@@ -68,10 +74,10 @@ private:
     uint32_t mMaxChar;
 
     // This vector has ownership of the bitsets and typeface objects.
-    std::vector<FontFamily*> mFamilies;
+    std::vector<FontInstance> mInstances;
 
     // This vector contains pointers into mInstances
-    std::vector<FontFamily*> mFamilyVec;
+    std::vector<const FontInstance*> mInstanceVec;
 
     // These are offsets into mInstanceVec, one range per page
     std::vector<Range> mRanges;
