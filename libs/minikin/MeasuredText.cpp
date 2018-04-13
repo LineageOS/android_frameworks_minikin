@@ -34,7 +34,7 @@ void MeasuredText::measure(const U16StringPiece& textBuf, bool computeHyphenatio
     for (const auto& run : runs) {
         const Range& range = run->getRange();
         const uint32_t runOffset = range.getStart();
-        run->getMetrics(textBuf, widths.data() + runOffset, extents.data() + runOffset, piecesOut);
+        run->getMetrics(textBuf, widths.data() + runOffset, piecesOut);
 
         if (!computeHyphenation || !run->canHyphenate()) {
             continue;
@@ -61,6 +61,38 @@ void MeasuredText::buildLayout(const U16StringPiece& textBuf, const Range& range
                                Layout* layout) {
     layout->doLayoutWithPrecomputedPieces(textBuf, range, bidiFlags, paint, startHyphen, endHyphen,
                                           layoutPieces);
+}
+
+MinikinRect MeasuredText::getBounds(const U16StringPiece& textBuf, const Range& range) const {
+    MinikinRect rect;
+    float advance = 0.0f;
+    for (const auto& run : runs) {
+        const Range& runRange = run->getRange();
+        if (!Range::intersects(range, runRange)) {
+            continue;
+        }
+        std::pair<float, MinikinRect> next =
+                run->getBounds(textBuf, Range::intersection(runRange, range), layoutPieces);
+        MinikinRect nextRect = next.second;
+        nextRect.offset(advance, 0);
+        rect.join(nextRect);
+        advance += next.first;
+    }
+    return rect;
+}
+
+MinikinExtent MeasuredText::getExtent(const U16StringPiece& textBuf, const Range& range) const {
+    MinikinExtent extent;
+    for (const auto& run : runs) {
+        const Range& runRange = run->getRange();
+        if (!Range::intersects(range, runRange)) {
+            continue;
+        }
+        MinikinExtent runExtent =
+                run->getExtent(textBuf, Range::intersection(runRange, range), layoutPieces);
+        extent.extendBy(runExtent);
+    }
+    return extent;
 }
 
 }  // namespace minikin

@@ -71,7 +71,6 @@ public:
     Layout()
             : mGlyphs(),
               mAdvances(),
-              mExtents(),
               mFaces(),
               mAdvance(0),
               mBounds() {
@@ -92,11 +91,20 @@ public:
                                        Bidi bidiFlags, const MinikinPaint& paint,
                                        StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
                                        const LayoutPieces& pieces);
+    static std::pair<float, MinikinRect> getBoundsWithPrecomputedPieces(const U16StringPiece& str,
+                                                                        const Range& range,
+                                                                        Bidi bidiFlags,
+                                                                        const MinikinPaint& paint,
+                                                                        const LayoutPieces& pieces);
+
+    static MinikinExtent getExtentWithPrecomputedPieces(const U16StringPiece& str,
+                                                        const Range& range, Bidi bidiFlags,
+                                                        const MinikinPaint& paint,
+                                                        const LayoutPieces& pieces);
 
     static float measureText(const U16StringPiece& str, const Range& range, Bidi bidiFlags,
                              const MinikinPaint& paint, StartHyphenEdit startHyphen,
-                             EndHyphenEdit endHyphen, float* advances, MinikinExtent* extents,
-                             LayoutPieces* pieces);
+                             EndHyphenEdit endHyphen, float* advances, LayoutPieces* pieces);
 
     inline const std::vector<float>& advances() const { return mAdvances; }
 
@@ -114,15 +122,14 @@ public:
     // buffer must match the length of the string (count arg to doLayout).
     void getAdvances(float* advances) const;
 
-    // Get extents, copying into caller-provided buffer. The size of this buffer must match the
-    // length of the string (count arg to doLayout).
-    void getExtents(MinikinExtent* extents) const;
+    const MinikinExtent& getExtent() const { return mExtent; }
 
     // The i parameter is an offset within the buf relative to start, it is < count, where
     // start and count are the parameters to doLayout
     float getCharAdvance(size_t i) const { return mAdvances[i]; }
 
     void getBounds(MinikinRect* rect) const;
+    const MinikinRect& getBounds() const { return mBounds; }
 
     // Purge all caches, useful in low memory conditions
     static void purgeCaches();
@@ -132,7 +139,7 @@ public:
 
     uint32_t getMemoryUsage() const {
         return sizeof(LayoutGlyph) * nGlyphs() + sizeof(float) * mAdvances.size() +
-               sizeof(MinikinExtent) * mExtents.size() + sizeof(FakedFont) * mFaces.size() +
+               sizeof(MinikinExtent) + sizeof(FakedFont) * mFaces.size() +
                sizeof(float /* mAdvance */) + sizeof(MinikinRect /* mBounds */);
     }
 
@@ -158,14 +165,15 @@ private:
                                    const MinikinPaint& paint, size_t dstStart,
                                    StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
                                    const LayoutPieces* lpIn, Layout* layout, float* advances,
-                                   MinikinExtent* extents, LayoutPieces* lpOut);
+                                   MinikinExtent* extents, MinikinRect* bounds,
+                                   LayoutPieces* lpOut);
 
     // Lay out a single word
     static float doLayoutWord(const uint16_t* buf, size_t start, size_t count, size_t bufSize,
                               bool isRtl, const MinikinPaint& paint, size_t bufStart,
                               StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
                               const LayoutPieces* lpIn, Layout* layout, float* advances,
-                              MinikinExtent* extents, LayoutPieces* lpOut);
+                              MinikinExtent* extents, MinikinRect* bounds, LayoutPieces* lpOut);
 
     // Lay out a single bidi run
     void doLayoutRun(const uint16_t* buf, size_t start, size_t count, size_t bufSize, bool isRtl,
@@ -174,81 +182,13 @@ private:
 
     std::vector<LayoutGlyph> mGlyphs;
 
-    // The following three vectors are defined per code unit, so their length is identical to the
-    // input text.
+    // This vector defined per code unit, so their length is identical to the input text.
     std::vector<float> mAdvances;
-    std::vector<MinikinExtent> mExtents;
 
     std::vector<FakedFont> mFaces;
     float mAdvance;
     MinikinRect mBounds;
-};
-
-struct LayoutPieces {
-    struct Key {
-        Key(const U16StringPiece& textBuf, const Range& range, HyphenEdit edit)
-                : text(textBuf.data()), length(textBuf.length()), range(range), hyphenEdit(edit) {}
-
-        void makePersistent() {
-            uint16_t* copied = new uint16_t[length];
-            std::copy(text, text + length, copied);
-            text = copied;
-        }
-
-        inline bool operator==(const Key& o) const {
-            return length == o.length && hyphenEdit == o.hyphenEdit && range == o.range &&
-                   (text == o.text || memcmp(text, o.text, sizeof(uint16_t) * length) == 0);
-        }
-
-        const uint16_t* text;
-        const uint32_t length;
-        Range range;
-        HyphenEdit hyphenEdit;
-    };
-
-    struct KeyHasher {
-        std::size_t operator()(const Key& key) const {
-            uint32_t hash = android::JenkinsHashMix(0, static_cast<uint8_t>(key.hyphenEdit));
-            hash = android::JenkinsHashMix(hash, key.range.getStart());
-            hash = android::JenkinsHashMix(hash, key.range.getEnd());
-            hash = android::JenkinsHashMixShorts(hash, key.text, key.length);
-            return android::JenkinsHashWhiten(hash);
-        }
-    };
-
-    LayoutPieces() {}
-
-    ~LayoutPieces() {
-        for (const auto it : offsetMap) {
-            delete[] it.first.text;
-        }
-    }
-
-    std::unordered_map<Key, Layout, KeyHasher> offsetMap;
-
-    void insert(const U16StringPiece& textBuf, const Range& range, HyphenEdit edit,
-                const Layout& layout) {
-        Key key(textBuf, range, edit);
-        key.makePersistent();
-        offsetMap.insert(std::make_pair(key, layout));
-    }
-
-    const Layout* get(const U16StringPiece& textBuf, const Range& range, HyphenEdit edit) const {
-        auto it = offsetMap.find(Key(textBuf, range, edit));
-        if (it == offsetMap.end()) {
-            return nullptr;
-        }
-        return &it->second;
-    }
-
-    uint32_t getMemoryUsage() const {
-        uint32_t result = 0;
-        for (const auto& i : offsetMap) {
-            result += sizeof(Key) + sizeof(uint16_t) * i.first.length;
-            result += i.second.getMemoryUsage();
-        }
-        return result;
-    }
+    MinikinExtent mExtent;
 };
 
 }  // namespace minikin
