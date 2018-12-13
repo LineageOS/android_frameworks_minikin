@@ -148,7 +148,6 @@ struct CharProcessor {
     // The user of CharProcessor must call updateLocaleIfNecessary with valid locale at least one
     // time before feeding characters.
     void updateLocaleIfNecessary(const Run& run) {
-        // Update locale if necessary.
         uint32_t newLocaleListId = run.getLocaleListId();
         if (localeListId != newLocaleListId) {
             Locale locale = getEffectiveLocale(newLocaleListId);
@@ -159,11 +158,13 @@ struct CharProcessor {
     }
 
     // Process one character.
-    void feedChar(uint32_t idx, uint16_t c, float w) {
+    void feedChar(uint32_t idx, uint16_t c, float w, bool canBreakHere) {
         if (idx == nextWordBreak) {
-            prevWordBreak = nextWordBreak;
+            if (canBreakHere) {
+                prevWordBreak = nextWordBreak;
+                sumOfCharWidthsAtPrevWordBreak = sumOfCharWidths;
+            }
             nextWordBreak = breaker.next();
-            sumOfCharWidthsAtPrevWordBreak = sumOfCharWidths;
         }
         if (isWordSpace(c)) {
             rawSpaceCount += 1;

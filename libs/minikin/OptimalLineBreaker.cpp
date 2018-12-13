@@ -221,7 +221,7 @@ OptimizeContext populateCandidates(const U16StringPiece& textBuf, const Measured
 
         // Compute penalty parameters.
         float hyphenPenalty = 0.0f;
-        if (run->canHyphenate()) {
+        if (run->canBreak()) {
             auto penalties = computePenalties(*run, lineWidth, frequency, isJustified);
             hyphenPenalty = penalties.first;
             result.linePenalty = std::max(penalties.second, result.linePenalty);
@@ -231,7 +231,7 @@ OptimizeContext populateCandidates(const U16StringPiece& textBuf, const Measured
 
         for (uint32_t i = range.getStart(); i < range.getEnd(); ++i) {
             MINIKIN_ASSERT(textBuf[i] != CHAR_TAB, "TAB is not supported in optimal line breaker");
-            proc.feedChar(i, textBuf[i], measured.widths[i]);
+            proc.feedChar(i, textBuf[i], measured.widths[i], run->canBreak());
 
             const uint32_t nextCharOffset = i + 1;
             if (nextCharOffset != proc.nextWordBreak) {
