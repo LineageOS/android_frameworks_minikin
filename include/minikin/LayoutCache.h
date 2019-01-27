@@ -27,6 +27,10 @@
 #include "minikin/Hasher.h"
 #include "minikin/MinikinPaint.h"
 
+#ifdef _WIN32
+#include <io.h>
+#endif
+
 namespace minikin {
 const uint32_t LENGTH_LIMIT_CACHE = 128;
 // Layout cache datatypes
@@ -45,7 +49,7 @@ public:
               mSkewX(paint.skewX),
               mLetterSpacing(paint.letterSpacing),
               mWordSpacing(paint.wordSpacing),
-              mPaintFlags(paint.paintFlags),
+              mFontFlags(paint.fontFlags),
               mLocaleListId(paint.localeListId),
               mFamilyVariant(paint.familyVariant),
               mStartHyphen(startHyphen),
@@ -57,7 +61,7 @@ public:
         return mId == o.mId && mStart == o.mStart && mCount == o.mCount && mStyle == o.mStyle &&
                mSize == o.mSize && mScaleX == o.mScaleX && mSkewX == o.mSkewX &&
                mLetterSpacing == o.mLetterSpacing && mWordSpacing == o.mWordSpacing &&
-               mPaintFlags == o.mPaintFlags && mLocaleListId == o.mLocaleListId &&
+               mFontFlags == o.mFontFlags && mLocaleListId == o.mLocaleListId &&
                mFamilyVariant == o.mFamilyVariant && mStartHyphen == o.mStartHyphen &&
                mEndHyphen == o.mEndHyphen && mIsRtl == o.mIsRtl && mNchars == o.mNchars &&
                !memcmp(mChars, o.mChars, mNchars * sizeof(uint16_t));
@@ -89,7 +93,7 @@ private:
     float mSkewX;
     float mLetterSpacing;
     float mWordSpacing;
-    int32_t mPaintFlags;
+    int32_t mFontFlags;
     uint32_t mLocaleListId;
     FamilyVariant mFamilyVariant;
     StartHyphenEdit mStartHyphen;
@@ -110,7 +114,7 @@ private:
                 .update(mSkewX)
                 .update(mLetterSpacing)
                 .update(mWordSpacing)
-                .update(mPaintFlags)
+                .update(mFontFlags)
                 .update(mLocaleListId)
                 .update(static_cast<uint8_t>(mFamilyVariant))
                 .update(packHyphenEdit(mStartHyphen, mEndHyphen))
@@ -160,10 +164,23 @@ public:
 
     void dumpStats(int fd) {
         std::lock_guard<std::mutex> lock(mMutex);
+#ifdef _WIN32
+        float ratio = (mRequestCount == 0) ? 0 : mCacheHitCount / (float)mRequestCount;
+        int count = _scprintf(
+                "\nLayout Cache Info:\n  Usage: %zd/%zd entries\n  Hit ratio: %d/%d (%f)\n",
+                mCache.size(), kMaxEntries, mCacheHitCount, mRequestCount, ratio);
+        int size = count + 1;
+        char* buffer = new char[size];
+        sprintf_s(buffer, size,
+                  "\nLayout Cache Info:\n  Usage: %zd/%zd entries\n  Hit ratio: %d/%d (%f)\n",
+                  mCache.size(), kMaxEntries, mCacheHitCount, mRequestCount, ratio);
+        _write(fd, buffer, sizeof(buffer));
+#else
         dprintf(fd, "\nLayout Cache Info:\n");
         dprintf(fd, "  Usage: %zd/%zd entries\n", mCache.size(), kMaxEntries);
         float ratio = (mRequestCount == 0) ? 0 : mCacheHitCount / (float)mRequestCount;
         dprintf(fd, "  Hit ratio: %d/%d (%f)\n", mCacheHitCount, mRequestCount, ratio);
+#endif
     }
 
     static LayoutCache& getInstance() {
