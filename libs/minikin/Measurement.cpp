@@ -127,7 +127,8 @@ void getBounds(const U16StringPiece& str, const Range& range, Bidi bidiFlags,
     MinikinRect tmpRect;
     // TODO: Batch request for reducing overhead.
     for (size_t i = 0; i < layout.nGlyphs(); ++i) {
-        layout.getFont(i)->GetBounds(&tmpRect, layout.getGlyphId(i), paint, layout.getFakery(i));
+        layout.getFont(i)->typeface()->GetBounds(&tmpRect, layout.getGlyphId(i), paint,
+                                                 layout.getFakery(i));
         tmpRect.offset(layout.getX(i), layout.getY(i));
         out->join(tmpRect);
     }

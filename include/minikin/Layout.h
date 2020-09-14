@@ -84,7 +84,7 @@ public:
 
     // public accessors
     size_t nGlyphs() const { return mGlyphs.size(); }
-    const MinikinFont* getFont(int i) const { return mGlyphs[i].font.font->typeface().get(); }
+    const Font* getFont(int i) const { return mGlyphs[i].font.font; }
     FontFakery getFakery(int i) const { return mGlyphs[i].font.fakery; }
     unsigned int getGlyphId(int i) const { return mGlyphs[i].glyph_id; }
     float getX(int i) const { return mGlyphs[i].x; }
