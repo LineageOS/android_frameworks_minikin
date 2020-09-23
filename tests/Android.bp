@@ -3,6 +3,7 @@ filegroup {
     srcs: [
         "data/Arabic.ttf",
         "data/Ascii.ttf",
+        "data/Bbox.ttf",
         "data/Bold.ttf",
         "data/BoldItalic.ttf",
         "data/Cherokee.ttf",
