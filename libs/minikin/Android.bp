@@ -24,6 +24,7 @@ cc_library {
     host_supported: true,
     srcs: [
         "BidiUtils.cpp",
+        "BoundsCache.cpp",
         "CmapCoverage.cpp",
         "Emoji.cpp",
         "FontCollection.cpp",

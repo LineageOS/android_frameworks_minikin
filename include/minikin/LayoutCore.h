@@ -53,7 +53,6 @@ public:
     const std::vector<Point>& points() const { return mPoints; }
     const std::vector<float>& advances() const { return mAdvances; }
     float advance() const { return mAdvance; }
-    const MinikinRect& bounds() const { return mBounds; }
     const MinikinExtent& extent() const { return mExtent; }
     const std::vector<FakedFont>& fonts() const { return mFonts; }
 
@@ -79,7 +78,6 @@ private:
     std::vector<float> mAdvances;  // per code units
 
     float mAdvance;
-    MinikinRect mBounds;
     MinikinExtent mExtent;
 
     std::vector<FakedFont> mFonts;
