@@ -511,9 +511,10 @@ LayoutPiece::LayoutPiece(const U16StringPiece& textBuf, const Range& range, bool
                     // glyphs in that case.
                     glyphBounds.mLeft = roundf(HBFixedToFloat(extents.x_bearing));
                     glyphBounds.mTop = roundf(HBFixedToFloat(-extents.y_bearing));
-                    glyphBounds.mRight = roundf(HBFixedToFloat(extents.x_bearing + extents.width));
-                    glyphBounds.mBottom =
-                            roundf(HBFixedToFloat(-extents.y_bearing - extents.height));
+                    glyphBounds.mRight = roundf(HBFixedToFloat(extents.x_bearing) +
+                                                HBFixedToFloat(extents.width));
+                    glyphBounds.mBottom = roundf(-HBFixedToFloat(extents.y_bearing) -
+                                                 HBFixedToFloat(extents.height));
                 } else {
                     fakedFont.font->typeface()->GetBounds(&glyphBounds, glyph_ix, paint,
                                                           fakedFont.fakery);
