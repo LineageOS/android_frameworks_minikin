@@ -41,6 +41,7 @@ cc_test {
     srcs: [
         "AndroidLineBreakerHelperTest.cpp",
         "BidiUtilsTest.cpp",
+        "BufferTest.cpp",
         "CmapCoverageTest.cpp",
         "EmojiTest.cpp",
         "FontTest.cpp",

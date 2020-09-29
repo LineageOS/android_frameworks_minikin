@@ -52,4 +52,18 @@ TEST(SparseBitSetTest, randomTest) {
     }
 }
 
+TEST(SparseBitSetTest, bufferTest) {
+    std::vector<uint32_t> range({10, 20});
+    SparseBitSet originalBitset(range.data(), range.size() / 2);
+    std::vector<int> buffer(BufferWriter::measure(originalBitset));
+    BufferWriter writer(buffer.data());
+    originalBitset.writeTo(&writer);
+    BufferReader reader(buffer.data());
+    SparseBitSet bitset(&reader);
+
+    for (size_t i = 0; i < 10; ++i) ASSERT_FALSE(bitset.get(i)) << i;
+    for (size_t i = 10; i < 20; ++i) ASSERT_TRUE(bitset.get(i)) << i;
+    for (size_t i = 20; i < 30; ++i) ASSERT_FALSE(bitset.get(i)) << i;
+}
+
 }  // namespace minikin
