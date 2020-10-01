@@ -56,6 +56,27 @@ std::shared_ptr<Font> Font::Builder::build() {
             new Font(std::move(mTypeface), FontStyle(mWeight, mSlant), std::move(font)));
 }
 
+const std::shared_ptr<MinikinFont>& Font::typeface() const {
+    std::lock_guard lock(mTypefaceMutex);
+    if (mTypeface) return mTypeface;
+    initTypefaceLocked();
+    return mTypeface;
+}
+
+const HbFontUniquePtr& Font::baseFont() const {
+    std::lock_guard lock(mTypefaceMutex);
+    if (mBaseFont) return mBaseFont;
+    initTypefaceLocked();
+    mBaseFont = prepareFont(mTypeface);
+    return mBaseFont;
+}
+
+void Font::initTypefaceLocked() const {
+    if (mTypeface) return;
+    MINIKIN_ASSERT(mTypefaceLoader, "mTypefaceLoader should not be empty when mTypeface is null");
+    mTypeface = mTypefaceLoader();
+}
+
 // static
 HbFontUniquePtr Font::prepareFont(const std::shared_ptr<MinikinFont>& typeface) {
     const char* buf = reinterpret_cast<const char*>(typeface->GetFontData());
@@ -97,7 +118,7 @@ FontStyle Font::analyzeStyle(const HbFontUniquePtr& font) {
 }
 
 std::unordered_set<AxisTag> Font::getSupportedAxes() const {
-    HbBlob fvarTable(mBaseFont, MinikinFont::MakeTag('f', 'v', 'a', 'r'));
+    HbBlob fvarTable(baseFont(), MinikinFont::MakeTag('f', 'v', 'a', 'r'));
     if (!fvarTable) {
         return std::unordered_set<AxisTag>();
     }

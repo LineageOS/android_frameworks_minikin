@@ -18,6 +18,7 @@
 #define MINIKIN_BUFFER_H
 
 #include <cstring>
+#include <string_view>
 #include <utility>
 
 namespace minikin {
@@ -41,30 +42,20 @@ public:
         return (upper << 16) | readUint16();
     }
 
-    // Return a pointer to an uint8_t array and its number of element.
-    std::pair<const uint8_t*, uint32_t> readUint8Array() {
+    // Return a pointer to an array and its number of elements.
+    template <typename T>
+    std::pair<const T*, uint32_t> readArray() {
+        static_assert(std::is_pod<T>::value, "T must be a POD");
         uint32_t size = readUint32();
-        const uint8_t* data = mCur;
-        mCur += size;
+        // TODO: align data to alignof(T)
+        const T* data = reinterpret_cast<const T*>(mCur);
+        mCur += size * sizeof(T);
         return std::make_pair(data, size);
     }
 
-    // Return a pointer to an uint16_t array and its number of element.
-    std::pair<const uint16_t*, uint32_t> readUint16Array() {
-        uint32_t size = readUint32();
-        // TODO: align data to alignof(uint16_t)
-        const uint16_t* data = reinterpret_cast<const uint16_t*>(mCur);
-        mCur += size * sizeof(uint16_t);
-        return std::make_pair(data, size);
-    }
-
-    // Return a pointer to an uint32_t array and its number of element.
-    std::pair<const uint32_t*, uint32_t> readUint32Array() {
-        uint32_t size = readUint32();
-        // TODO: align data to alignof(uint32_t)
-        const uint32_t* data = reinterpret_cast<const uint32_t*>(mCur);
-        mCur += size * sizeof(uint32_t);
-        return std::make_pair(data, size);
+    std::string_view readString() {
+        auto [data, size] = readArray<char>();
+        return std::string_view(data, size);
     }
 
 private:
@@ -74,13 +65,16 @@ private:
 // This is a helper class to write data to a memory buffer.
 class BufferWriter {
 public:
-    BufferWriter(void* buffer) : BufferWriter(buffer, false) {}
+    // Create a buffer writer. Passing nullptr creates a fake writer,
+    // which can be used to measure the buffer size needed.
+    BufferWriter(void* buffer)
+            : mCur(reinterpret_cast<uint8_t*>(buffer)), mHead(reinterpret_cast<uint8_t*>(buffer)) {}
 
     BufferWriter(BufferWriter&&) = default;
     BufferWriter& operator=(BufferWriter&&) = default;
 
     void writeUint8(uint8_t value) {
-        if (!mDryRun) {
+        if (mHead != nullptr) {
             *mCur = value;
         }
         mCur++;
@@ -96,50 +90,24 @@ public:
         writeUint16(value & 0xFFFF);
     }
 
-    void writeUint8Array(const uint8_t* data, uint32_t size) {
+    template <typename T>
+    void writeArray(const T* data, uint32_t size) {
+        static_assert(std::is_pod<T>::value, "T must be a POD");
         writeUint32(size);
-        if (!mDryRun) {
-            memcpy(mCur, data, size);
+        if (mHead != nullptr) {
+            memcpy(mCur, data, size * sizeof(T));
         }
-        mCur += size;
+        mCur += size * sizeof(T);
     }
 
-    void writeUint16Array(const uint16_t* data, uint32_t size) {
-        writeUint32(size);
-        if (!mDryRun) {
-            memcpy(mCur, data, size * sizeof(uint16_t));
-        }
-        mCur += size * sizeof(uint16_t);
-    }
-
-    void writeUint32Array(const uint32_t* data, uint32_t size) {
-        writeUint32(size);
-        if (!mDryRun) {
-            memcpy(mCur, data, size * sizeof(uint32_t));
-        }
-        mCur += size * sizeof(uint32_t);
-    }
+    void writeString(std::string_view string) { writeArray<char>(string.data(), string.size()); }
 
     // Return the number of bytes written.
-    size_t getSize() const { return mCur - mHead; }
-
-    // Return the number of bytes required to write the object.
-    template <class T>
-    static size_t measure(const T& t) {
-        BufferWriter writer(nullptr, true /* dryRun */);
-        t.writeTo(&writer);
-        return writer.getSize();
-    }
+    size_t size() const { return mCur - mHead; }
 
 private:
-    BufferWriter(void* buffer, bool dryRun)
-            : mCur(reinterpret_cast<uint8_t*>(buffer)),
-              mHead(reinterpret_cast<uint8_t*>(buffer)),
-              mDryRun(dryRun) {}
-
     uint8_t* mCur;
     uint8_t* mHead;
-    bool mDryRun;
 
     // Forbid copy and assign.
     BufferWriter(const BufferWriter&) = delete;

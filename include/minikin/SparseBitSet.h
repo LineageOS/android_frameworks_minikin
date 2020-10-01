@@ -43,7 +43,7 @@ public:
         initFromRanges(ranges, nRanges);
     }
 
-    SparseBitSet(BufferReader* reader) : SparseBitSet() { initFromBuffer(reader); }
+    explicit SparseBitSet(BufferReader* reader) : SparseBitSet() { initFromBuffer(reader); }
 
     SparseBitSet(SparseBitSet&&) = default;
     SparseBitSet& operator=(SparseBitSet&&) = default;

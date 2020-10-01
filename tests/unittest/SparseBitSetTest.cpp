@@ -20,6 +20,8 @@
 
 #include <gtest/gtest.h>
 
+#include "BufferUtils.h"
+
 namespace minikin {
 
 TEST(SparseBitSetTest, randomTest) {
@@ -55,7 +57,7 @@ TEST(SparseBitSetTest, randomTest) {
 TEST(SparseBitSetTest, bufferTest) {
     std::vector<uint32_t> range({10, 20});
     SparseBitSet originalBitset(range.data(), range.size() / 2);
-    std::vector<int> buffer(BufferWriter::measure(originalBitset));
+    std::vector<uint8_t> buffer = allocateBuffer(originalBitset);
     BufferWriter writer(buffer.data());
     originalBitset.writeTo(&writer);
     BufferReader reader(buffer.data());

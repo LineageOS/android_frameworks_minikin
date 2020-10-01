@@ -106,15 +106,15 @@ void SparseBitSet::initFromRanges(const uint32_t* ranges, size_t nRanges) {
 
 void SparseBitSet::initFromBuffer(BufferReader* reader) {
     mMaxVal = reader->readUint32();
-    std::tie(mIndices, mIndicesCount) = reader->readUint16Array();
-    std::tie(mBitmaps, mBitmapsCount) = reader->readUint32Array();
+    std::tie(mIndices, mIndicesCount) = reader->readArray<uint16_t>();
+    std::tie(mBitmaps, mBitmapsCount) = reader->readArray<element>();
     mZeroPageIndex = reader->readUint16();
 }
 
 void SparseBitSet::writeTo(BufferWriter* writer) const {
     writer->writeUint32(mMaxVal);
-    writer->writeUint16Array(mIndices, mIndicesCount);
-    writer->writeUint32Array(mBitmaps, mBitmapsCount);
+    writer->writeArray(mIndices, mIndicesCount);
+    writer->writeArray(mBitmaps, mBitmapsCount);
     writer->writeUint16(mZeroPageIndex);
 }
 

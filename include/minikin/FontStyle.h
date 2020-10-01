@@ -17,6 +17,8 @@
 #ifndef MINIKIN_FONT_STYLE_H
 #define MINIKIN_FONT_STYLE_H
 
+#include <minikin/Buffer.h>
+
 namespace minikin {
 
 // FontStyle represents style information.
@@ -46,6 +48,15 @@ public:
     constexpr FontStyle(Weight weight, Slant slant)
             : FontStyle(static_cast<uint16_t>(weight), slant) {}
     constexpr FontStyle(uint16_t weight, Slant slant) : mWeight(weight), mSlant(slant) {}
+    explicit FontStyle(BufferReader* reader) {
+        mWeight = reader->readUint16();
+        mSlant = static_cast<Slant>(reader->readUint8());
+    }
+
+    void writeTo(BufferWriter* writer) const {
+        writer->writeUint16(mWeight);
+        writer->writeUint8(static_cast<uint8_t>(mSlant));
+    }
 
     constexpr uint16_t weight() const { return mWeight; }
     constexpr Slant slant() const { return mSlant; }
