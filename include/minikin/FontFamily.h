@@ -33,10 +33,10 @@ namespace minikin {
 
 class FontFamily {
 public:
-    explicit FontFamily(std::vector<Font>&& fonts);
-    FontFamily(FamilyVariant variant, std::vector<Font>&& fonts);
-    FontFamily(uint32_t localeListId, FamilyVariant variant, std::vector<Font>&& fonts,
-               bool isCustomFallback);
+    explicit FontFamily(std::vector<std::shared_ptr<Font>>&& fonts);
+    FontFamily(FamilyVariant variant, std::vector<std::shared_ptr<Font>>&& fonts);
+    FontFamily(uint32_t localeListId, FamilyVariant variant,
+               std::vector<std::shared_ptr<Font>>&& fonts, bool isCustomFallback);
 
     FakedFont getClosestMatch(FontStyle style) const;
 
@@ -45,8 +45,8 @@ public:
 
     // API's for enumerating the fonts in a family. These don't guarantee any particular order
     size_t getNumFonts() const { return mFonts.size(); }
-    const Font* getFont(size_t index) const { return &mFonts[index]; }
-    FontStyle getStyle(size_t index) const { return mFonts[index].style(); }
+    const Font* getFont(size_t index) const { return mFonts[index].get(); }
+    FontStyle getStyle(size_t index) const { return mFonts[index]->style(); }
     bool isColorEmojiFamily() const { return mIsColorEmoji; }
     const std::unordered_set<AxisTag>& supportedAxes() const { return mSupportedAxes; }
     bool isCustomFallback() const { return mIsCustomFallback; }
@@ -71,7 +71,7 @@ private:
 
     uint32_t mLocaleListId;
     FamilyVariant mVariant;
-    std::vector<Font> mFonts;
+    std::vector<std::shared_ptr<Font>> mFonts;
     std::unordered_set<AxisTag> mSupportedAxes;
     bool mIsColorEmoji;
     bool mIsCustomFallback;

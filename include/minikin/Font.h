@@ -88,7 +88,7 @@ public:
             return *this;
         }
 
-        Font build();
+        std::shared_ptr<Font> build();
 
     private:
         std::shared_ptr<MinikinFont> mTypeface;
@@ -97,17 +97,6 @@ public:
         bool mIsWeightSet = false;
         bool mIsSlantSet = false;
     };
-
-    Font(Font&& o) = default;
-    Font& operator=(Font&& o) = default;
-
-    Font& operator=(const Font& o) {
-        mTypeface = o.mTypeface;
-        mStyle = o.mStyle;
-        mBaseFont = HbFontUniquePtr(hb_font_reference(o.mBaseFont.get()));
-        return *this;
-    }
-    Font(const Font& o) { *this = o; }
 
     inline const std::shared_ptr<MinikinFont>& typeface() const { return mTypeface; }
     inline FontStyle style() const { return mStyle; }
@@ -126,6 +115,12 @@ private:
     std::shared_ptr<MinikinFont> mTypeface;
     FontStyle mStyle;
     HbFontUniquePtr mBaseFont;
+
+    // Stop copying and moving
+    Font(Font&& o) = delete;
+    Font& operator=(Font&& o) = delete;
+    Font(const Font& o) = delete;
+    Font& operator=(const Font& o) = delete;
 };
 
 }  // namespace minikin

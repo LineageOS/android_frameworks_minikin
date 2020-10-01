@@ -728,7 +728,7 @@ TEST_F(FontFamilyTest, closestMatch) {
 
     for (const TestCase& testCase : testCases) {
         std::vector<std::shared_ptr<MinikinFont>> dummyFonts;
-        std::vector<Font> fonts;
+        std::vector<std::shared_ptr<Font>> fonts;
         for (auto familyStyle : testCase.familyStyles) {
             std::shared_ptr<MinikinFont> dummyFont(
                     new FreeTypeMinikinFontForTest(getTestFontPath(kTestFont)));
