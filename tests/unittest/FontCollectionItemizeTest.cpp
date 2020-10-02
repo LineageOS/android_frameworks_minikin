@@ -103,8 +103,7 @@ std::vector<FontCollection::Run> itemize(const std::shared_ptr<FontCollection>& 
 // Utility function to obtain font path associated with run.
 std::string getFontName(const FontCollection::Run& run) {
     EXPECT_NE(nullptr, run.fakedFont.font);
-    return getBasename(
-            ((FreeTypeMinikinFontForTest*)run.fakedFont.font->typeface().get())->fontPath());
+    return getBasename(run.fakedFont.font->typeface()->GetFontPath());
 }
 
 // Utility function to obtain LocaleList from string.

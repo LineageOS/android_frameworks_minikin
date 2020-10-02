@@ -43,8 +43,7 @@ public:
     void GetFontExtent(MinikinExtent* extent, const MinikinPaint& paint,
                        const FontFakery& fakery) const override;
 
-    const std::string& fontPath() const { return mFontPath; }
-
+    const std::string& GetFontPath() const override { return mFontPath; }
     const void* GetFontData() const { return mFontData; }
     size_t GetFontSize() const { return mFontSize; }
     int GetFontIndex() const { return mFontIndex; }

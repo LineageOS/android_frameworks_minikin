@@ -54,6 +54,9 @@ public:
     virtual void GetFontExtent(MinikinExtent* extent, const MinikinPaint& paint,
                                const FontFakery& fakery) const = 0;
 
+    // Returns the font path or an empty string.
+    virtual const std::string& GetFontPath() const = 0;
+
     // Override if font can provide access to raw data
     virtual const void* GetFontData() const { return nullptr; }
 
