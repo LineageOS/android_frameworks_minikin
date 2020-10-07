@@ -19,6 +19,7 @@
 
 #include <cstring>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 namespace minikin {
@@ -40,6 +41,15 @@ public:
     uint32_t readUint32() {
         uint16_t upper = readUint16();
         return (upper << 16) | readUint16();
+    }
+
+    template <typename T>
+    const T& read() {
+        static_assert(std::is_pod<T>::value, "T must be a POD");
+        // TODO: align data to alignof(T)
+        const T* data = reinterpret_cast<const T*>(mCur);
+        mCur += sizeof(T);
+        return *data;
     }
 
     // Return a pointer to an array and its number of elements.
@@ -90,8 +100,25 @@ public:
         writeUint16(value & 0xFFFF);
     }
 
+    // Write a single data of type T.
+    // Please always specify T explicitly using <>. std::common_type_t<T> resolves to T, but
+    // disables template argument deduction.
+    // TODO: use std::type_identity_t when C++20 is available.
     template <typename T>
-    void writeArray(const T* data, uint32_t size) {
+    void write(const std::common_type_t<T>& data) {
+        static_assert(std::is_pod<T>::value, "T must be a POD");
+        if (mHead != nullptr) {
+            memcpy(mCur, &data, sizeof(T));
+        }
+        mCur += sizeof(T);
+    }
+
+    // Write an array of type T.
+    // Please always specify T explicitly using <>. std::common_type_t<T> resolves to T, but
+    // disables template argument deduction.
+    // TODO: use std::type_identity_t when C++20 is available.
+    template <typename T>
+    void writeArray(const std::common_type_t<T>* data, uint32_t size) {
         static_assert(std::is_pod<T>::value, "T must be a POD");
         writeUint32(size);
         if (mHead != nullptr) {

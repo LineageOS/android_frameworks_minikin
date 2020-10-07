@@ -21,6 +21,7 @@
 #include <unordered_set>
 
 #include <log/log.h>
+#include <minikin/Hasher.h>
 #include <unicode/uloc.h>
 
 #include "Locale.h"
@@ -106,15 +107,39 @@ static std::vector<Locale> parseLocaleList(const std::string& input) {
     return result;
 }
 
+size_t LocaleListCache::LocaleVectorHash::operator()(const std::vector<Locale>& locales) const {
+    Hasher hasher;
+    for (const auto& locale : locales) {
+        uint64_t id = locale.getIdentifier();
+        hasher.update(static_cast<uint32_t>((id >> 32) & 0xFFFFFFFF));
+        hasher.update(static_cast<uint32_t>(id & 0xFFFFFFFF));
+    }
+    return hasher.hash();
+}
+
 LocaleListCache::LocaleListCache() {
     // Insert an empty locale list for mapping default locale list to kEmptyListId.
     // The default locale list has only one Locale and it is the unsupported locale.
     mLocaleLists.emplace_back();
-    mLocaleListLookupTable.insert(std::make_pair("", kEmptyListId));
+    mLocaleListLookupTable.emplace(std::vector<Locale>(), kEmptyListId);
+    mLocaleListStringCache.emplace("", kEmptyListId);
 }
 
 uint32_t LocaleListCache::getIdInternal(const std::string& locales) {
     std::lock_guard<std::mutex> lock(mMutex);
+    const auto& it = mLocaleListStringCache.find(locales);
+    if (it != mLocaleListStringCache.end()) {
+        return it->second;
+    }
+    uint32_t id = getIdInternal(parseLocaleList(locales));
+    mLocaleListStringCache.emplace(locales, id);
+    return id;
+}
+
+uint32_t LocaleListCache::getIdInternal(std::vector<Locale>&& locales) {
+    if (locales.empty()) {
+        return kEmptyListId;
+    }
     const auto& it = mLocaleListLookupTable.find(locales);
     if (it != mLocaleListLookupTable.end()) {
         return it->second;
@@ -122,13 +147,29 @@ uint32_t LocaleListCache::getIdInternal(const std::string& locales) {
 
     // Given locale list is not in cache. Insert it and return newly assigned ID.
     const uint32_t nextId = mLocaleLists.size();
-    LocaleList fontLocales(parseLocaleList(locales));
-    if (fontLocales.empty()) {
-        return kEmptyListId;
-    }
+    mLocaleListLookupTable.emplace(locales, nextId);
+    LocaleList fontLocales(std::move(locales));
     mLocaleLists.push_back(std::move(fontLocales));
-    mLocaleListLookupTable.insert(std::make_pair(locales, nextId));
     return nextId;
+}
+
+uint32_t LocaleListCache::readFromInternal(BufferReader* reader) {
+    uint32_t size = reader->read<uint32_t>();
+    std::vector<Locale> locales;
+    locales.reserve(size);
+    for (uint32_t i = 0; i < size; i++) {
+        locales.emplace_back(reader->read<uint64_t>());
+    }
+    std::lock_guard<std::mutex> lock(mMutex);
+    return getIdInternal(std::move(locales));
+}
+
+void LocaleListCache::writeToInternal(BufferWriter* writer, uint32_t id) {
+    const LocaleList& localeList = getByIdInternal(id);
+    writer->write<uint32_t>(localeList.size());
+    for (size_t i = 0; i < localeList.size(); i++) {
+        writer->write<uint64_t>(localeList[i].getIdentifier());
+    }
 }
 
 const LocaleList& LocaleListCache::getByIdInternal(uint32_t id) {

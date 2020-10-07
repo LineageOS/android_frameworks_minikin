@@ -113,8 +113,8 @@ void SparseBitSet::initFromBuffer(BufferReader* reader) {
 
 void SparseBitSet::writeTo(BufferWriter* writer) const {
     writer->writeUint32(mMaxVal);
-    writer->writeArray(mIndices, mIndicesCount);
-    writer->writeArray(mBitmaps, mBitmapsCount);
+    writer->writeArray<uint16_t>(mIndices, mIndicesCount);
+    writer->writeArray<element>(mBitmaps, mBitmapsCount);
     writer->writeUint16(mZeroPageIndex);
 }
 

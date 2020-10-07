@@ -28,7 +28,7 @@ TEST(BufferTest, testMeasureWriteRead) {
             writer->writeUint16(0xCDEF);
             writer->writeUint32(0x98765432);
             uint32_t uint32Array[] = {0x98765432, 0x98765433};
-            writer->writeArray(uint32Array, 2);
+            writer->writeArray<uint32_t>(uint32Array, 2);
         }
     } testObject;
     BufferWriter fakeWriter(nullptr);
