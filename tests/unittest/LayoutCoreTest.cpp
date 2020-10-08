@@ -74,6 +74,7 @@ TEST(LayoutPieceTest, doLayoutTest) {
         auto layout = buildLayout("I", {"LayoutTestFont.ttf"});
         EXPECT_EQ(1u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 10.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-100.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -86,6 +87,7 @@ TEST(LayoutPieceTest, doLayoutTest) {
         EXPECT_EQ(2u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
         EXPECT_EQ(Point(10.0f, 0), layout.pointAt(1));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 20.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-100.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -101,6 +103,7 @@ TEST(LayoutPieceTest, doLayoutTest) {
         EXPECT_EQ(2u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
         EXPECT_EQ(Point(10.0f, 0), layout.pointAt(1));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 60.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-100.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -127,6 +130,7 @@ TEST(LayoutPieceTest, doLayoutTest_MultiFont) {
         EXPECT_EQ(2u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
         EXPECT_EQ(Point(10.0f, 0), layout.pointAt(1));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 30.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-160.0f, 40.0f), layout.extent());
         EXPECT_EQ(2u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -142,6 +146,7 @@ TEST(LayoutPieceTest, doLayoutTest_MultiFont) {
         EXPECT_EQ(2u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
         EXPECT_EQ(Point(20.0f, 0), layout.pointAt(1));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 30.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-160.0f, 40.0f), layout.extent());
         EXPECT_EQ(2u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -163,6 +168,7 @@ TEST(LayoutPieceTest, doLayoutTest_Ligature) {
         auto layout = buildLayout("fi", {"Ligature.ttf"});
         EXPECT_EQ(1u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 10.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-80.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -175,6 +181,7 @@ TEST(LayoutPieceTest, doLayoutTest_Ligature) {
         auto layout = buildLayout("ff", {"Ligature.ttf"});
         EXPECT_EQ(1u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 10.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-80.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -187,6 +194,7 @@ TEST(LayoutPieceTest, doLayoutTest_Ligature) {
         auto layout = buildLayout("fi", {"Ligature.ttf"}, "'liga' off");
         EXPECT_EQ(1u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 10.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-80.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -199,6 +207,7 @@ TEST(LayoutPieceTest, doLayoutTest_Ligature) {
         auto layout = buildLayout("ff", {"Ligature.ttf"}, "'liga' off");
         EXPECT_EQ(2u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 20.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-80.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -213,6 +222,7 @@ TEST(LayoutPieceTest, doLayoutTest_Ligature) {
         auto layout = buildLayout("fii", {"Ligature.ttf"});
         EXPECT_EQ(2u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 20.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-80.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
@@ -228,6 +238,7 @@ TEST(LayoutPieceTest, doLayoutTest_Ligature) {
         auto layout = buildLayout("if", {"Ligature.ttf"});
         EXPECT_EQ(2u, layout.glyphCount());
         EXPECT_EQ(Point(0, 0), layout.pointAt(0));
+        EXPECT_EQ(MinikinRect(0.0f, 10.0f, 20.0f, 0.0f), layout.bounds());
         EXPECT_EQ(MinikinExtent(-80.0f, 20.0f), layout.extent());
         EXPECT_EQ(1u, layout.fonts().size());
         EXPECT_TRUE(layout.fontAt(0).font);
