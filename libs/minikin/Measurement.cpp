@@ -118,20 +118,4 @@ size_t getOffsetForAdvance(const float* advances, const uint16_t* buf, size_t st
     return best;
 }
 
-void getBounds(const U16StringPiece& str, const Range& range, Bidi bidiFlags,
-               const MinikinPaint& paint, StartHyphenEdit startHyphen, EndHyphenEdit endHyphen,
-               MinikinRect* out) {
-    Layout layout(str, range, bidiFlags, paint, startHyphen, endHyphen);
-    out->setEmpty();
-
-    MinikinRect tmpRect;
-    // TODO: Batch request for reducing overhead.
-    for (size_t i = 0; i < layout.nGlyphs(); ++i) {
-        layout.getFont(i)->typeface()->GetBounds(&tmpRect, layout.getGlyphId(i), paint,
-                                                 layout.getFakery(i));
-        tmpRect.offset(layout.getX(i), layout.getY(i));
-        out->join(tmpRect);
-    }
-}
-
 }  // namespace minikin

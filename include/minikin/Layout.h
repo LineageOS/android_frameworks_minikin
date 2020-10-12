@@ -92,6 +92,8 @@ public:
     float getAdvance() const { return mAdvance; }
     float getCharAdvance(size_t i) const { return mAdvances[i]; }
     const std::vector<float>& getAdvances() const { return mAdvances; }
+    void getBounds(MinikinRect* rect) const { rect->set(mBounds); }
+    const MinikinRect& getBounds() const { return mBounds; }
 
     // Purge all caches, useful in low memory conditions
     static void purgeCaches();
@@ -133,6 +135,7 @@ private:
     std::vector<float> mAdvances;
 
     float mAdvance;
+    MinikinRect mBounds;
 };
 
 }  // namespace minikin
