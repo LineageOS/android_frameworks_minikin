@@ -49,9 +49,9 @@ public:
 
     // Low level accessors.
     const std::vector<uint8_t>& fontIndices() const { return mFontIndices; }
-    const std::vector<uint32_t> glyphIds() const { return mGlyphIds; }
-    const std::vector<Point> points() const { return mPoints; }
-    const std::vector<float> advances() const { return mAdvances; }
+    const std::vector<uint32_t>& glyphIds() const { return mGlyphIds; }
+    const std::vector<Point>& points() const { return mPoints; }
+    const std::vector<float>& advances() const { return mAdvances; }
     float advance() const { return mAdvance; }
     const MinikinRect& bounds() const { return mBounds; }
     const MinikinExtent& extent() const { return mExtent; }
