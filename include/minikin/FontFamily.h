@@ -38,6 +38,26 @@ public:
     FontFamily(uint32_t localeListId, FamilyVariant variant,
                std::vector<std::shared_ptr<Font>>&& fonts, bool isCustomFallback);
 
+    template <Font::TypefaceReader typefaceReader>
+    static std::shared_ptr<FontFamily> readFrom(BufferReader* reader) {
+        uint32_t fontsCount = reader->read<uint32_t>();
+        std::vector<std::shared_ptr<Font>> fonts;
+        fonts.reserve(fontsCount);
+        for (uint32_t i = 0; i < fontsCount; i++) {
+            fonts.emplace_back(Font::readFrom<typefaceReader>(reader));
+        }
+        return readFromInternal(reader, std::move(fonts));
+    }
+
+    template <Font::TypefaceWriter typefaceWriter>
+    void writeTo(BufferWriter* writer) const {
+        writer->write<uint32_t>(mFonts.size());
+        for (const std::shared_ptr<Font>& font : mFonts) {
+            font->writeTo<typefaceWriter>(writer);
+        }
+        writeToInternal(writer);
+    }
+
     FakedFont getClosestMatch(FontStyle style) const;
 
     uint32_t localeListId() const { return mLocaleListId; }
@@ -67,6 +87,16 @@ public:
             const std::vector<FontVariation>& variations) const;
 
 private:
+    FontFamily(uint32_t localeListId, FamilyVariant variant,
+               std::vector<std::shared_ptr<Font>>&& fonts,
+               std::unordered_set<AxisTag>&& supportedAxes, bool isColorEmoji,
+               bool isCustomFallback, SparseBitSet&& coverage,
+               std::vector<std::unique_ptr<SparseBitSet>>&& cmapFmt14Coverage);
+
+    static std::shared_ptr<FontFamily> readFromInternal(BufferReader* reader,
+                                                        std::vector<std::shared_ptr<Font>>&& fonts);
+    void writeToInternal(BufferWriter* writer) const;
+
     void computeCoverage();
 
     uint32_t mLocaleListId;

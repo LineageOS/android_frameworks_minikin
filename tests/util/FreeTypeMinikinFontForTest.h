@@ -19,6 +19,8 @@
 
 #include <string>
 
+#include "minikin/Buffer.h"
+#include "minikin/Font.h"
 #include "minikin/MinikinFont.h"
 
 #include <ft2build.h>
@@ -61,6 +63,10 @@ private:
 
     MINIKIN_PREVENT_COPY_AND_ASSIGN(FreeTypeMinikinFontForTest);
 };
+
+void writeFreeTypeMinikinFontForTest(BufferWriter* writer, const MinikinFont* typeface);
+
+Font::TypefaceLoader readFreeTypeMinikinFontForTest(BufferReader* reader);
 
 }  // namespace minikin
 

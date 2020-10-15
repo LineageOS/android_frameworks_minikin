@@ -112,4 +112,13 @@ void FreeTypeMinikinFontForTest::GetFontExtent(MinikinExtent* extent, const Mini
     extent->descent = -static_cast<float>(mFtFace->descender) * paint.size / upem;
 }
 
+void writeFreeTypeMinikinFontForTest(BufferWriter* writer, const MinikinFont* typeface) {
+    writer->writeString(typeface->GetFontPath());
+}
+
+Font::TypefaceLoader readFreeTypeMinikinFontForTest(BufferReader* reader) {
+    std::string fontPath(reader->readString());
+    return [fontPath]() { return std::make_shared<FreeTypeMinikinFontForTest>(fontPath); };
+}
+
 }  // namespace minikin

@@ -68,4 +68,15 @@ TEST(SparseBitSetTest, bufferTest) {
     for (size_t i = 20; i < 30; ++i) ASSERT_FALSE(bitset.get(i)) << i;
 }
 
+TEST(SparseBitSetTest, emptyBitSetBufferTest) {
+    SparseBitSet empty;
+    std::vector<uint8_t> buffer = allocateBuffer(empty);
+    BufferWriter writer(buffer.data());
+    empty.writeTo(&writer);
+    BufferReader reader(buffer.data());
+    SparseBitSet bitset(&reader);
+
+    ASSERT_FALSE(bitset.get(0));
+}
+
 }  // namespace minikin

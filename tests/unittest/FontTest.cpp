@@ -24,15 +24,6 @@
 
 namespace minikin {
 
-void writeFreeTypeMinikinFontForTest(BufferWriter* writer, const MinikinFont* typeface) {
-    writer->writeString(typeface->GetFontPath());
-}
-
-Font::TypefaceLoader readFreeTypeMinikinFontForTest(BufferReader* reader) {
-    std::string fontPath(reader->readString());
-    return [fontPath]() { return std::make_shared<FreeTypeMinikinFontForTest>(fontPath); };
-}
-
 TEST(FontTest, BufferTest) {
     auto minikinFont = std::make_shared<FreeTypeMinikinFontForTest>(getTestFontPath("Ascii.ttf"));
     std::shared_ptr<Font> original = Font::Builder(minikinFont).build();

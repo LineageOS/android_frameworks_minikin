@@ -146,6 +146,76 @@ FontFamily::FontFamily(uint32_t localeListId, FamilyVariant variant,
     computeCoverage();
 }
 
+FontFamily::FontFamily(uint32_t localeListId, FamilyVariant variant,
+                       std::vector<std::shared_ptr<Font>>&& fonts,
+                       std::unordered_set<AxisTag>&& supportedAxes, bool isColorEmoji,
+                       bool isCustomFallback, SparseBitSet&& coverage,
+                       std::vector<std::unique_ptr<SparseBitSet>>&& cmapFmt14Coverage)
+        : mLocaleListId(localeListId),
+          mVariant(variant),
+          mFonts(std::move(fonts)),
+          mSupportedAxes(std::move(supportedAxes)),
+          mIsColorEmoji(isColorEmoji),
+          mIsCustomFallback(isCustomFallback),
+          mCoverage(std::move(coverage)),
+          mCmapFmt14Coverage(std::move(cmapFmt14Coverage)) {}
+
+// Read fields other than mFonts.
+// static
+std::shared_ptr<FontFamily> FontFamily::readFromInternal(
+        BufferReader* reader, std::vector<std::shared_ptr<Font>>&& fonts) {
+    uint32_t localeListId = LocaleListCache::readFrom(reader);
+    FamilyVariant variant = reader->read<FamilyVariant>();
+    uint32_t axesCount = reader->read<uint32_t>();
+    std::unordered_set<AxisTag> supportedAxes;
+    supportedAxes.reserve(axesCount);
+    for (uint32_t i = 0; i < axesCount; i++) {
+        supportedAxes.insert(reader->read<AxisTag>());
+    }
+    bool isColorEmoji = static_cast<bool>(reader->read<uint8_t>());
+    bool isCustomFallback = static_cast<bool>(reader->read<uint8_t>());
+    SparseBitSet coverage(reader);
+    // Read mCmapFmt14Coverage. As it can have null entries, it is stored in the buffer as a sparse
+    // array (size, non-null entry count, array of (index, entry)).
+    uint32_t cmapFmt14CoverageSize = reader->read<uint32_t>();
+    std::vector<std::unique_ptr<SparseBitSet>> cmapFmt14Coverage(cmapFmt14CoverageSize);
+    uint32_t cmapFmt14CoverageEntryCount = reader->read<uint32_t>();
+    for (uint32_t i = 0; i < cmapFmt14CoverageEntryCount; i++) {
+        uint32_t index = reader->read<uint32_t>();
+        cmapFmt14Coverage[index] = std::make_unique<SparseBitSet>(reader);
+    }
+    return std::shared_ptr<FontFamily>(new FontFamily(
+            localeListId, variant, std::move(fonts), std::move(supportedAxes), isColorEmoji,
+            isCustomFallback, std::move(coverage), std::move(cmapFmt14Coverage)));
+}
+
+// Write fields other than mFonts.
+void FontFamily::writeToInternal(BufferWriter* writer) const {
+    LocaleListCache::writeTo(writer, mLocaleListId);
+    writer->write<FamilyVariant>(mVariant);
+    writer->write<uint32_t>(mSupportedAxes.size());
+    for (const AxisTag& axis : mSupportedAxes) {
+        writer->write<AxisTag>(axis);
+    }
+    writer->write<uint8_t>(mIsColorEmoji);
+    writer->write<uint8_t>(mIsCustomFallback);
+    mCoverage.writeTo(writer);
+    // Write mCmapFmt14Coverage as a sparse array (size, non-null entry count,
+    // array of (index, entry))
+    writer->write<uint32_t>(mCmapFmt14Coverage.size());
+    uint32_t cmapFmt14CoverageEntryCount = 0;
+    for (const std::unique_ptr<SparseBitSet>& coverage : mCmapFmt14Coverage) {
+        if (coverage != nullptr) cmapFmt14CoverageEntryCount++;
+    }
+    writer->write<uint32_t>(cmapFmt14CoverageEntryCount);
+    for (size_t i = 0; i < mCmapFmt14Coverage.size(); i++) {
+        if (mCmapFmt14Coverage[i] != nullptr) {
+            writer->write<uint32_t>(i);
+            mCmapFmt14Coverage[i]->writeTo(writer);
+        }
+    }
+}
+
 // Compute a matching metric between two styles - 0 is an exact match
 static int computeMatch(FontStyle style1, FontStyle style2) {
     if (style1 == style2) return 0;
