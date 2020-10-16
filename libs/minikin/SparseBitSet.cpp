@@ -105,17 +105,21 @@ void SparseBitSet::initFromRanges(const uint32_t* ranges, size_t nRanges) {
 }
 
 void SparseBitSet::initFromBuffer(BufferReader* reader) {
-    mMaxVal = reader->readUint32();
+    mMaxVal = reader->read<uint32_t>();
+    // mIndices and mBitmaps are not initialized when mMaxVal == 0
+    if (mMaxVal == 0) return;
     std::tie(mIndices, mIndicesCount) = reader->readArray<uint16_t>();
     std::tie(mBitmaps, mBitmapsCount) = reader->readArray<element>();
-    mZeroPageIndex = reader->readUint16();
+    mZeroPageIndex = reader->read<uint16_t>();
 }
 
 void SparseBitSet::writeTo(BufferWriter* writer) const {
-    writer->writeUint32(mMaxVal);
+    writer->write<uint32_t>(mMaxVal);
+    // mIndices and mBitmaps are not initialized when mMaxVal == 0
+    if (mMaxVal == 0) return;
     writer->writeArray<uint16_t>(mIndices, mIndicesCount);
     writer->writeArray<element>(mBitmaps, mBitmapsCount);
-    writer->writeUint16(mZeroPageIndex);
+    writer->write<uint16_t>(mZeroPageIndex);
 }
 
 int SparseBitSet::CountLeadingZeros(element x) {

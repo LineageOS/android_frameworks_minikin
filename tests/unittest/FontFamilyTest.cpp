@@ -20,6 +20,7 @@
 
 #include "minikin/LocaleList.h"
 
+#include "BufferUtils.h"
 #include "FontTestUtils.h"
 #include "FreeTypeMinikinFontForTest.h"
 #include "LocaleListCache.h"
@@ -549,9 +550,7 @@ void expectVSGlyphs(FontFamily* family, uint32_t codepoint, const std::set<uint3
     }
 }
 
-TEST_F(FontFamilyTest, hasVariationSelectorTest) {
-    std::shared_ptr<FontFamily> family = buildFontFamily(kVsTestFont);
-
+void expectVSGlyphsForVsTestFont(FontFamily* family) {
     const uint32_t kVS1 = 0xFE00;
     const uint32_t kVS2 = 0xFE01;
     const uint32_t kVS3 = 0xFE02;
@@ -562,23 +561,28 @@ TEST_F(FontFamilyTest, hasVariationSelectorTest) {
 
     const uint32_t kSupportedChar1 = 0x82A6;
     EXPECT_TRUE(family->getCoverage().get(kSupportedChar1));
-    expectVSGlyphs(family.get(), kSupportedChar1, std::set<uint32_t>({kVS1, kVS17, kVS18, kVS19}));
+    expectVSGlyphs(family, kSupportedChar1, std::set<uint32_t>({kVS1, kVS17, kVS18, kVS19}));
 
     const uint32_t kSupportedChar2 = 0x845B;
     EXPECT_TRUE(family->getCoverage().get(kSupportedChar2));
-    expectVSGlyphs(family.get(), kSupportedChar2, std::set<uint32_t>({kVS2, kVS18, kVS19, kVS20}));
+    expectVSGlyphs(family, kSupportedChar2, std::set<uint32_t>({kVS2, kVS18, kVS19, kVS20}));
 
     const uint32_t kNoVsSupportedChar = 0x537F;
     EXPECT_TRUE(family->getCoverage().get(kNoVsSupportedChar));
-    expectVSGlyphs(family.get(), kNoVsSupportedChar, std::set<uint32_t>());
+    expectVSGlyphs(family, kNoVsSupportedChar, std::set<uint32_t>());
 
     const uint32_t kVsOnlySupportedChar = 0x717D;
     EXPECT_FALSE(family->getCoverage().get(kVsOnlySupportedChar));
-    expectVSGlyphs(family.get(), kVsOnlySupportedChar, std::set<uint32_t>({kVS3, kVS19, kVS20}));
+    expectVSGlyphs(family, kVsOnlySupportedChar, std::set<uint32_t>({kVS3, kVS19, kVS20}));
 
     const uint32_t kNotSupportedChar = 0x845C;
     EXPECT_FALSE(family->getCoverage().get(kNotSupportedChar));
-    expectVSGlyphs(family.get(), kNotSupportedChar, std::set<uint32_t>());
+    expectVSGlyphs(family, kNotSupportedChar, std::set<uint32_t>());
+}
+
+TEST_F(FontFamilyTest, hasVariationSelectorTest) {
+    std::shared_ptr<FontFamily> family = buildFontFamily(kVsTestFont);
+    expectVSGlyphsForVsTestFont(family.get());
 }
 
 TEST_F(FontFamilyTest, hasVSTableTest) {
@@ -787,6 +791,39 @@ TEST_F(FontFamilyTest, closestMatch) {
                 << std::endl
                 << "Expected Families' Style: "
                 << fontStyleToString(testCase.familyStyles[testCase.expectedIndex]) << std::endl;
+    }
+}
+
+std::shared_ptr<FontFamily> copyFontFamilyByBuffer(const FontFamily& fontFamily) {
+    std::vector<uint8_t> buffer =
+            allocateBuffer<FontFamily, writeFreeTypeMinikinFontForTest>(fontFamily);
+    BufferWriter writer(buffer.data());
+    fontFamily.writeTo<writeFreeTypeMinikinFontForTest>(&writer);
+
+    BufferReader reader(buffer.data());
+    return FontFamily::readFrom<readFreeTypeMinikinFontForTest>(&reader);
+}
+
+TEST_F(FontFamilyTest, bufferTest) {
+    {
+        // Font with variation selectors
+        std::shared_ptr<FontFamily> original = buildFontFamily(kVsTestFont);
+        std::shared_ptr<FontFamily> copied = copyFontFamilyByBuffer(*original);
+        ASSERT_EQ(original->localeListId(), copied->localeListId());
+        ASSERT_EQ(original->variant(), copied->variant());
+        ASSERT_EQ(original->getNumFonts(), copied->getNumFonts());
+        ASSERT_EQ(original->supportedAxes(), copied->supportedAxes());
+        ASSERT_EQ(original->isColorEmojiFamily(), copied->isColorEmojiFamily());
+        ASSERT_EQ(original->isCustomFallback(), copied->isCustomFallback());
+        ASSERT_EQ(original->hasVSTable(), copied->hasVSTable());
+        expectVSGlyphsForVsTestFont(copied.get());
+    }
+    {
+        // Font with axes
+        constexpr char kMultiAxisFont[] = "MultiAxis.ttf";
+        std::shared_ptr<FontFamily> original = buildFontFamily(kMultiAxisFont);
+        std::shared_ptr<FontFamily> copied = copyFontFamilyByBuffer(*original);
+        ASSERT_EQ(original->supportedAxes(), copied->supportedAxes());
     }
 }
 
