@@ -19,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include "FontTestUtils.h"
+#include "FreeTypeMinikinFontForTest.h"
 #include "MinikinInternal.h"
 
 namespace minikin {
@@ -56,22 +57,23 @@ void expectVSGlyphs(const FontCollection* fc, uint32_t codepoint, const std::set
     }
 }
 
-TEST(FontCollectionTest, hasVariationSelectorTest) {
-    auto fc = buildFontCollection(kVsTestFont);
-
+void expectVSGlyphsForVsTestFont(const FontCollection* fc) {
     EXPECT_FALSE(fc->hasVariationSelector(0x82A6, 0));
-    expectVSGlyphs(fc.get(), 0x82A6,
-                   std::set<uint32_t>({0xFE00, 0xFE0E, 0xE0100, 0xE0101, 0xE0102}));
+    expectVSGlyphs(fc, 0x82A6, std::set<uint32_t>({0xFE00, 0xFE0E, 0xE0100, 0xE0101, 0xE0102}));
 
     EXPECT_FALSE(fc->hasVariationSelector(0x845B, 0));
-    expectVSGlyphs(fc.get(), 0x845B,
-                   std::set<uint32_t>({0xFE01, 0xFE0E, 0xE0101, 0xE0102, 0xE0103}));
+    expectVSGlyphs(fc, 0x845B, std::set<uint32_t>({0xFE01, 0xFE0E, 0xE0101, 0xE0102, 0xE0103}));
 
     EXPECT_FALSE(fc->hasVariationSelector(0x537F, 0));
-    expectVSGlyphs(fc.get(), 0x537F, std::set<uint32_t>({0xFE0E}));
+    expectVSGlyphs(fc, 0x537F, std::set<uint32_t>({0xFE0E}));
 
     EXPECT_FALSE(fc->hasVariationSelector(0x717D, 0));
-    expectVSGlyphs(fc.get(), 0x717D, std::set<uint32_t>({0xFE02, 0xE0102, 0xE0103}));
+    expectVSGlyphs(fc, 0x717D, std::set<uint32_t>({0xFE02, 0xE0102, 0xE0103}));
+}
+
+TEST(FontCollectionTest, hasVariationSelectorTest) {
+    auto fc = buildFontCollection(kVsTestFont);
+    expectVSGlyphsForVsTestFont(fc.get());
 }
 
 const char kEmojiXmlFile[] = "emoji.xml";
@@ -172,6 +174,52 @@ TEST(FontCollectionTest, createWithVariations) {
         EXPECT_NE(multiAxisFc.get(), newFc.get());
 
         EXPECT_EQ(nullptr, noAxisFc->createCollectionWithVariation(variations));
+    }
+}
+
+std::vector<std::shared_ptr<FontCollection>> copyFontCollectionsByBuffer(
+        const std::vector<std::shared_ptr<FontCollection>>& collections) {
+    BufferWriter fakeWriter(nullptr);
+    FontCollection::writeVector<writeFreeTypeMinikinFontForTest>(&fakeWriter, collections);
+    std::vector<uint8_t> buffer(fakeWriter.size());
+    BufferWriter writer(buffer.data());
+    FontCollection::writeVector<writeFreeTypeMinikinFontForTest>(&writer, collections);
+    BufferReader reader(buffer.data());
+    return FontCollection::readVector<readFreeTypeMinikinFontForTest>(&reader);
+}
+
+TEST(FontCollectionTest, bufferTest) {
+    {
+        std::vector<std::shared_ptr<FontCollection>> original({buildFontCollection(kVsTestFont)});
+        auto copied = copyFontCollectionsByBuffer(original);
+        EXPECT_EQ(1u, copied.size());
+        expectVSGlyphsForVsTestFont(copied[0].get());
+        EXPECT_EQ(original[0]->getSupportedTags(), copied[0]->getSupportedTags());
+        // Id will be different.
+        EXPECT_NE(original[0]->getId(), copied[0]->getId());
+    }
+    {
+        // Test that FontFamily instances are shared.
+        std::vector<std::shared_ptr<FontFamily>> families = {buildFontFamily(kVsTestFont)};
+        auto fc1 = std::make_shared<FontCollection>(families);
+        auto fc2 = std::make_shared<FontCollection>(families);
+        std::vector<std::shared_ptr<FontCollection>> original({fc1, fc2});
+        auto copied = copyFontCollectionsByBuffer(original);
+        EXPECT_EQ(2u, copied.size());
+        EXPECT_EQ(copied[0]->mFamilies[0], copied[1]->mFamilies[0]);
+    }
+    {
+        // Test axes.
+        // This font has 'wdth' and 'wght' axes.
+        const char kMultiAxisFont[] = "MultiAxis.ttf";
+        std::vector<std::shared_ptr<FontCollection>> original(
+                {buildFontCollection(kMultiAxisFont)});
+        auto copied = copyFontCollectionsByBuffer(original);
+        EXPECT_EQ(1u, copied.size());
+        EXPECT_EQ(1u,
+                  copied[0]->getSupportedTags().count(MinikinFont::MakeTag('w', 'd', 't', 'h')));
+        EXPECT_EQ(1u,
+                  copied[0]->getSupportedTags().count(MinikinFont::MakeTag('w', 'g', 'h', 't')));
     }
 }
 
