@@ -83,24 +83,91 @@ void FontCollection::init(const vector<std::shared_ptr<FontFamily>>& typefaces) 
     // A font can have a glyph for a base code point and variation selector pair but no glyph for
     // the base code point without variation selector. The family won't be listed in the range in
     // this case.
+    mOwnedRanges = std::make_unique<Range[]>(nPages);
+    mRanges = mOwnedRanges.get();
+    mRangesCount = nPages;
     for (size_t i = 0; i < nPages; i++) {
-        Range dummy;
-        mRanges.push_back(dummy);
-        Range* range = &mRanges.back();
-        range->start = mFamilyVec.size();
+        Range* range = &mOwnedRanges[i];
+        range->start = mOwnedFamilyVec.size();
         for (size_t j = 0; j < nTypefaces; j++) {
             if (lastChar[j] < (i + 1) << kLogCharsPerPage) {
                 const std::shared_ptr<FontFamily>& family = mFamilies[j];
-                mFamilyVec.push_back(static_cast<uint8_t>(j));
+                mOwnedFamilyVec.push_back(static_cast<uint8_t>(j));
                 uint32_t nextChar = family->getCoverage().nextSetBit((i + 1) << kLogCharsPerPage);
                 lastChar[j] = nextChar;
             }
         }
-        range->end = mFamilyVec.size();
+        range->end = mOwnedFamilyVec.size();
     }
     // See the comment in Range for more details.
-    LOG_ALWAYS_FATAL_IF(mFamilyVec.size() >= 0xFFFF,
+    LOG_ALWAYS_FATAL_IF(mOwnedFamilyVec.size() >= 0xFFFF,
                         "Exceeded the maximum indexable cmap coverage.");
+    mFamilyVec = mOwnedFamilyVec.data();
+    mFamilyVecCount = mOwnedFamilyVec.size();
+}
+
+FontCollection::FontCollection(BufferReader* reader,
+                               const std::vector<std::shared_ptr<FontFamily>>& families) {
+    mId = gNextCollectionId++;
+    mMaxChar = reader->read<uint32_t>();
+    uint32_t familiesCount = reader->read<uint32_t>();
+    mFamilies.reserve(familiesCount);
+    for (uint32_t i = 0; i < familiesCount; i++) {
+        uint32_t index = reader->read<uint32_t>();
+        if (index >= families.size()) {
+            ALOGE("Invalid FontFamily index: %zu", (size_t)index);
+        } else {
+            mFamilies.push_back(families[index]);
+            if (families[index]->hasVSTable()) {
+                mVSFamilyVec.push_back(families[index]);
+            }
+        }
+    }
+    std::tie(mRanges, mRangesCount) = reader->readArray<Range>();
+    std::tie(mFamilyVec, mFamilyVecCount) = reader->readArray<uint8_t>();
+    uint32_t supportedAxesCount = reader->read<uint32_t>();
+    for (uint32_t i = 0; i < supportedAxesCount; i++) {
+        mSupportedAxes.insert(reader->read<AxisTag>());
+    }
+}
+
+void FontCollection::writeTo(BufferWriter* writer,
+                             const std::unordered_map<std::shared_ptr<FontFamily>, uint32_t>&
+                                     fontFamilyToIndexMap) const {
+    writer->write<uint32_t>(mMaxChar);
+    writer->write<uint32_t>(mFamilies.size());
+    for (const std::shared_ptr<FontFamily>& fontFamily : mFamilies) {
+        auto it = fontFamilyToIndexMap.find(fontFamily);
+        if (it == fontFamilyToIndexMap.end()) {
+            ALOGE("fontFamily not found in fontFamilyToIndexMap");
+            writer->write<uint32_t>(-1);
+        } else {
+            writer->write<uint32_t>(it->second);
+        }
+    }
+    writer->writeArray<Range>(mRanges, mRangesCount);
+    writer->writeArray<uint8_t>(mFamilyVec, mFamilyVecCount);
+    // No need to serialize mVSFamilyVec as it can be reconstructed easily from mFamilies.
+    writer->write<uint32_t>(mSupportedAxes.size());
+    for (const AxisTag& axis : mSupportedAxes) {
+        writer->write<AxisTag>(axis);
+    }
+}
+
+// static
+void FontCollection::collectAllFontFamilies(
+        const std::vector<std::shared_ptr<FontCollection>>& fontCollections,
+        std::vector<std::shared_ptr<FontFamily>>* outAllFontFamilies,
+        std::unordered_map<std::shared_ptr<FontFamily>, uint32_t>* outFontFamilyToIndexMap) {
+    for (const auto& fontCollection : fontCollections) {
+        for (const std::shared_ptr<FontFamily>& fontFamily : fontCollection->mFamilies) {
+            bool inserted =
+                    outFontFamilyToIndexMap->emplace(fontFamily, outAllFontFamilies->size()).second;
+            if (inserted) {
+                outAllFontFamilies->push_back(fontFamily);
+            }
+        }
+    }
 }
 
 // Special scores for the font fallback.

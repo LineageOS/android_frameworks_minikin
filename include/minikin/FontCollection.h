@@ -18,9 +18,14 @@
 #define MINIKIN_FONT_COLLECTION_H
 
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
+#include <gtest/gtest_prod.h>
+
+#include "minikin/Buffer.h"
+#include "minikin/Font.h"
 #include "minikin/FontFamily.h"
 #include "minikin/MinikinFont.h"
 #include "minikin/U16StringPiece.h"
@@ -34,6 +39,41 @@ class FontCollection {
 public:
     explicit FontCollection(const std::vector<std::shared_ptr<FontFamily>>& typefaces);
     explicit FontCollection(std::shared_ptr<FontFamily>&& typeface);
+
+    template <Font::TypefaceReader typefaceReader>
+    static std::vector<std::shared_ptr<FontCollection>> readVector(BufferReader* reader) {
+        uint32_t allFontFamiliesCount = reader->read<uint32_t>();
+        std::vector<std::shared_ptr<FontFamily>> allFontFamilies;
+        allFontFamilies.reserve(allFontFamiliesCount);
+        for (uint32_t i = 0; i < allFontFamiliesCount; i++) {
+            allFontFamilies.push_back(FontFamily::readFrom<typefaceReader>(reader));
+        }
+        uint32_t fontCollectionsCount = reader->read<uint32_t>();
+        std::vector<std::shared_ptr<FontCollection>> fontCollections;
+        fontCollections.reserve(fontCollectionsCount);
+        for (uint32_t i = 0; i < fontCollectionsCount; i++) {
+            fontCollections.emplace_back(new FontCollection(reader, allFontFamilies));
+        }
+        return fontCollections;
+    }
+
+    template <Font::TypefaceWriter typefaceWriter>
+    static void writeVector(BufferWriter* writer,
+                            const std::vector<std::shared_ptr<FontCollection>>& fontCollections) {
+        std::vector<std::shared_ptr<FontFamily>> allFontFamilies;
+        // Note: operator== for shared_ptr compares raw pointer values.
+        std::unordered_map<std::shared_ptr<FontFamily>, uint32_t> fontFamilyToIndexMap;
+        collectAllFontFamilies(fontCollections, &allFontFamilies, &fontFamilyToIndexMap);
+
+        writer->write<uint32_t>(allFontFamilies.size());
+        for (const auto& fontFamily : allFontFamilies) {
+            fontFamily->writeTo<typefaceWriter>(writer);
+        }
+        writer->write<uint32_t>(fontCollections.size());
+        for (const auto& fontCollection : fontCollections) {
+            fontCollection->writeTo(writer, fontFamilyToIndexMap);
+        }
+    }
 
     struct Run {
         FakedFont fakedFont;
@@ -69,6 +109,20 @@ public:
     uint32_t getId() const;
 
 private:
+    FRIEND_TEST(FontCollectionTest, bufferTest);
+
+    FontCollection(BufferReader* reader,
+                   const std::vector<std::shared_ptr<FontFamily>>& allFontFamilies);
+    // Write fields of the instance, using fontFamilyToIndexMap for finding
+    // indices for FontFamily.
+    void writeTo(BufferWriter* writer,
+                 const std::unordered_map<std::shared_ptr<FontFamily>, uint32_t>&
+                         fontFamilyToIndexMap) const;
+    static void collectAllFontFamilies(
+            const std::vector<std::shared_ptr<FontCollection>>& fontCollections,
+            std::vector<std::shared_ptr<FontFamily>>* outAllFontFamilies,
+            std::unordered_map<std::shared_ptr<FontFamily>, uint32_t>* outFontFamilyToIndexMap);
+
     static const int kLogCharsPerPage = 8;
     static const int kPageMask = (1 << kLogCharsPerPage) - 1;
 
@@ -116,14 +170,21 @@ private:
     // mFamilyVec[mRange[0xXXYY].end] instead of whole mFamilies.
     // This vector contains indices into mFamilies.
     // This vector can't be empty.
-    std::vector<Range> mRanges;
-    std::vector<uint8_t> mFamilyVec;
+    uint32_t mRangesCount;
+    const Range* mRanges;
+    uint32_t mFamilyVecCount;
+    const uint8_t* mFamilyVec;
 
     // This vector has pointers to the font family instances which have cmap 14 subtables.
     std::vector<std::shared_ptr<FontFamily>> mVSFamilyVec;
 
     // Set of supported axes in this collection.
     std::unordered_set<AxisTag> mSupportedAxes;
+
+    // Owns allocated memory if this class is created from font families, otherwise these are
+    // nullptr.
+    std::unique_ptr<Range[]> mOwnedRanges;
+    std::vector<uint8_t> mOwnedFamilyVec;
 };
 
 }  // namespace minikin
