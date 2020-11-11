@@ -30,7 +30,7 @@ public:
     TestableSystemFonts() : SystemFonts() {}
     virtual ~TestableSystemFonts() {}
 
-    std::shared_ptr<FontCollection> findFontCollection(const std::string& familyName) const {
+    std::shared_ptr<FontCollection> findFontCollection(const std::string& familyName) {
         return findFontCollectionInternal(familyName);
     }
 
@@ -64,6 +64,18 @@ TEST(SystemFontsTest, registerDefaultAndFallback) {
     systemFonts.registerFallback("sans", fc2);
     EXPECT_EQ(fc1, systemFonts.findFontCollection("unknown-name"));
     EXPECT_EQ(fc2, systemFonts.findFontCollection("sans"));
+}
+
+TEST(SystemFontsTest, updateDefaultAndFallback) {
+    TestableSystemFonts systemFonts;
+    auto fc1 = buildFontCollection("Ascii.ttf");
+    auto fc2 = buildFontCollection("Bold.ttf");
+    systemFonts.registerDefault(fc1);
+    systemFonts.registerFallback("sans", fc2);
+    systemFonts.registerDefault(fc2);
+    systemFonts.registerFallback("sans", fc1);
+    EXPECT_EQ(fc2, systemFonts.findFontCollection("unknown-name"));
+    EXPECT_EQ(fc1, systemFonts.findFontCollection("sans"));
 }
 
 }  // namespace

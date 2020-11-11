@@ -26,7 +26,8 @@ SystemFonts& SystemFonts::getInstance() {
 }
 
 std::shared_ptr<FontCollection> SystemFonts::findFontCollectionInternal(
-        const std::string& familyName) const {
+        const std::string& familyName) {
+    std::lock_guard<std::mutex> lock(mMutex);
     auto it = mSystemFallbacks.find(familyName);
     if (it != mSystemFallbacks.end()) {
         return it->second;

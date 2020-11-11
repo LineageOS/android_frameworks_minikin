@@ -19,6 +19,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include "minikin/FontCollection.h"
@@ -33,13 +34,11 @@ public:
         return getInstance().findFontCollectionInternal(familyName);
     }
 
-    // Do not call this function outside Zygote process.
     static void registerFallback(const std::string& familyName,
                                  const std::shared_ptr<FontCollection>& fc) {
         return getInstance().registerFallbackInternal(familyName, fc);
     }
 
-    // Do not call this function outside Zygote process.
     static void registerDefault(const std::shared_ptr<FontCollection>& fc) {
         return getInstance().registerDefaultInternal(fc);
     }
@@ -49,23 +48,24 @@ protected:
     SystemFonts() {}
     virtual ~SystemFonts() {}
 
-    std::shared_ptr<FontCollection> findFontCollectionInternal(const std::string& familyName) const;
+    std::shared_ptr<FontCollection> findFontCollectionInternal(const std::string& familyName);
     void registerFallbackInternal(const std::string& familyName,
                                   const std::shared_ptr<FontCollection>& fc) {
-        mSystemFallbacks.insert(std::make_pair(familyName, fc));
+        std::lock_guard<std::mutex> lock(mMutex);
+        mSystemFallbacks[familyName] = fc;
     }
 
     void registerDefaultInternal(const std::shared_ptr<FontCollection>& fc) {
+        std::lock_guard<std::mutex> lock(mMutex);
         mDefaultFallback = fc;
     }
 
 private:
     static SystemFonts& getInstance();
 
-    // There is no mutex guard here since registerFallback is designed to be
-    // called only in Zygote.
-    std::map<std::string, std::shared_ptr<FontCollection>> mSystemFallbacks;
-    std::shared_ptr<FontCollection> mDefaultFallback;
+    std::map<std::string, std::shared_ptr<FontCollection>> mSystemFallbacks GUARDED_BY(mMutex);
+    std::shared_ptr<FontCollection> mDefaultFallback GUARDED_BY(mMutex);
+    std::mutex mMutex;
 };
 
 }  // namespace minikin
