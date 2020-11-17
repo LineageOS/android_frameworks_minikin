@@ -109,6 +109,8 @@ void SparseBitSet::initFromBuffer(BufferReader* reader) {
     // mIndices and mBitmaps are not initialized when mMaxVal == 0
     if (mMaxVal == 0) return;
     std::tie(mIndices, mIndicesCount) = reader->readArray<uint16_t>();
+    // element is uint32_t
+    static_assert(sizeof(element) == 4);
     std::tie(mBitmaps, mBitmapsCount) = reader->readArray<element>();
     mZeroPageIndex = reader->read<uint16_t>();
 }

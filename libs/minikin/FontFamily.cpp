@@ -165,6 +165,8 @@ FontFamily::FontFamily(uint32_t localeListId, FamilyVariant variant,
 std::shared_ptr<FontFamily> FontFamily::readFromInternal(
         BufferReader* reader, std::vector<std::shared_ptr<Font>>&& fonts) {
     uint32_t localeListId = LocaleListCache::readFrom(reader);
+    // FamilyVariant is uint8_t
+    static_assert(sizeof(FamilyVariant) == 1);
     FamilyVariant variant = reader->read<FamilyVariant>();
     uint32_t axesCount = reader->read<uint32_t>();
     std::unordered_set<AxisTag> supportedAxes;
@@ -194,6 +196,8 @@ void FontFamily::writeToInternal(BufferWriter* writer) const {
     LocaleListCache::writeTo(writer, mLocaleListId);
     writer->write<FamilyVariant>(mVariant);
     writer->write<uint32_t>(mSupportedAxes.size());
+    // AxisTag is uint32_t
+    static_assert(sizeof(AxisTag) == 4);
     for (const AxisTag& axis : mSupportedAxes) {
         writer->write<AxisTag>(axis);
     }

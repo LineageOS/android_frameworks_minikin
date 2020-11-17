@@ -49,13 +49,13 @@ public:
             : FontStyle(static_cast<uint16_t>(weight), slant) {}
     constexpr FontStyle(uint16_t weight, Slant slant) : mWeight(weight), mSlant(slant) {}
     explicit FontStyle(BufferReader* reader) {
-        mWeight = reader->readUint16();
-        mSlant = static_cast<Slant>(reader->readUint8());
+        mWeight = reader->read<uint16_t>();
+        mSlant = static_cast<Slant>(reader->read<uint8_t>());
     }
 
     void writeTo(BufferWriter* writer) const {
-        writer->writeUint16(mWeight);
-        writer->writeUint8(static_cast<uint8_t>(mSlant));
+        writer->write<uint16_t>(mWeight);
+        writer->write<uint8_t>(static_cast<uint8_t>(mSlant));
     }
 
     constexpr uint16_t weight() const { return mWeight; }

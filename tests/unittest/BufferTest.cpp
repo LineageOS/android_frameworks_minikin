@@ -24,15 +24,18 @@ TEST(BufferTest, testMeasureWriteRead) {
     class {
     public:
         void writeTo(BufferWriter* writer) const {
-            writer->writeUint8(0xAB);
-            writer->writeUint16(0xCDEF);
-            writer->writeUint32(0x98765432);
+            writer->write<uint8_t>(0xAB);
+            writer->write<uint16_t>(0xCDEF);
+            writer->write<uint8_t>(0x01);
             uint32_t uint32Array[] = {0x98765432, 0x98765433};
             writer->writeArray<uint32_t>(uint32Array, 2);
         }
     } testObject;
     BufferWriter fakeWriter(nullptr);
     testObject.writeTo(&fakeWriter);
+    // uint8_t (1), padding (1), uint16_t (2), uint8_t(1), padding (3),
+    // array size (4), uint32_t (4) * 2
+    ASSERT_EQ(fakeWriter.size(), 20u);
     std::vector<uint8_t> buffer(fakeWriter.size());
 
     BufferWriter writer(buffer.data());
@@ -40,9 +43,9 @@ TEST(BufferTest, testMeasureWriteRead) {
     ASSERT_EQ(writer.size(), buffer.size());
 
     BufferReader reader(buffer.data());
-    ASSERT_EQ(reader.readUint8(), 0xABu);
-    ASSERT_EQ(reader.readUint16(), 0xCDEFu);
-    ASSERT_EQ(reader.readUint32(), 0x98765432u);
+    ASSERT_EQ(reader.read<uint8_t>(), 0xABu);
+    ASSERT_EQ(reader.read<uint16_t>(), 0xCDEFu);
+    ASSERT_EQ(reader.read<uint8_t>(), 0x01u);
     auto [uint32Array, size] = reader.readArray<uint32_t>();
     ASSERT_EQ(size, 2u);
     ASSERT_EQ(uint32Array[0], 0x98765432u);

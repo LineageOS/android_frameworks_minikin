@@ -123,6 +123,8 @@ FontCollection::FontCollection(BufferReader* reader,
             }
         }
     }
+    // Range is two packed uint16_t
+    static_assert(sizeof(Range) == 4);
     std::tie(mRanges, mRangesCount) = reader->readArray<Range>();
     std::tie(mFamilyVec, mFamilyVecCount) = reader->readArray<uint8_t>();
     uint32_t supportedAxesCount = reader->read<uint32_t>();
