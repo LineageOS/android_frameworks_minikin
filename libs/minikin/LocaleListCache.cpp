@@ -23,6 +23,7 @@
 #include <log/log.h>
 #include <minikin/Hasher.h>
 #include <unicode/uloc.h>
+#include <unicode/umachine.h>
 
 #include "Locale.h"
 #include "MinikinInternal.h"
