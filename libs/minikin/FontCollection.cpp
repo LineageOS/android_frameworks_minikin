@@ -127,10 +127,8 @@ FontCollection::FontCollection(BufferReader* reader,
     static_assert(sizeof(Range) == 4);
     std::tie(mRanges, mRangesCount) = reader->readArray<Range>();
     std::tie(mFamilyVec, mFamilyVecCount) = reader->readArray<uint8_t>();
-    uint32_t supportedAxesCount = reader->read<uint32_t>();
-    for (uint32_t i = 0; i < supportedAxesCount; i++) {
-        mSupportedAxes.insert(reader->read<AxisTag>());
-    }
+    const auto& [axesPtr, axesCount] = reader->readArray<AxisTag>();
+    mSupportedAxes.insert(axesPtr, axesPtr + axesCount);
 }
 
 void FontCollection::writeTo(BufferWriter* writer,
@@ -150,10 +148,10 @@ void FontCollection::writeTo(BufferWriter* writer,
     writer->writeArray<Range>(mRanges, mRangesCount);
     writer->writeArray<uint8_t>(mFamilyVec, mFamilyVecCount);
     // No need to serialize mVSFamilyVec as it can be reconstructed easily from mFamilies.
-    writer->write<uint32_t>(mSupportedAxes.size());
-    for (const AxisTag& axis : mSupportedAxes) {
-        writer->write<AxisTag>(axis);
-    }
+    std::vector<AxisTag> axes(mSupportedAxes.begin(), mSupportedAxes.end());
+    // Sort axes to be deterministic.
+    std::sort(axes.begin(), axes.end());
+    writer->writeArray<AxisTag>(axes.data(), axes.size());
 }
 
 // static

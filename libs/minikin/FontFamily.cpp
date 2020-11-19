@@ -18,6 +18,7 @@
 
 #include "minikin/FontFamily.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -168,12 +169,10 @@ std::shared_ptr<FontFamily> FontFamily::readFromInternal(
     // FamilyVariant is uint8_t
     static_assert(sizeof(FamilyVariant) == 1);
     FamilyVariant variant = reader->read<FamilyVariant>();
-    uint32_t axesCount = reader->read<uint32_t>();
-    std::unordered_set<AxisTag> supportedAxes;
-    supportedAxes.reserve(axesCount);
-    for (uint32_t i = 0; i < axesCount; i++) {
-        supportedAxes.insert(reader->read<AxisTag>());
-    }
+    // AxisTag is uint32_t
+    static_assert(sizeof(AxisTag) == 4);
+    const auto& [axesPtr, axesCount] = reader->readArray<AxisTag>();
+    std::unordered_set<AxisTag> supportedAxes(axesPtr, axesPtr + axesCount);
     bool isColorEmoji = static_cast<bool>(reader->read<uint8_t>());
     bool isCustomFallback = static_cast<bool>(reader->read<uint8_t>());
     SparseBitSet coverage(reader);
@@ -195,12 +194,10 @@ std::shared_ptr<FontFamily> FontFamily::readFromInternal(
 void FontFamily::writeToInternal(BufferWriter* writer) const {
     LocaleListCache::writeTo(writer, mLocaleListId);
     writer->write<FamilyVariant>(mVariant);
-    writer->write<uint32_t>(mSupportedAxes.size());
-    // AxisTag is uint32_t
-    static_assert(sizeof(AxisTag) == 4);
-    for (const AxisTag& axis : mSupportedAxes) {
-        writer->write<AxisTag>(axis);
-    }
+    std::vector<AxisTag> axes(mSupportedAxes.begin(), mSupportedAxes.end());
+    // Sort axes to be deterministic.
+    std::sort(axes.begin(), axes.end());
+    writer->writeArray<AxisTag>(axes.data(), axes.size());
     writer->write<uint8_t>(mIsColorEmoji);
     writer->write<uint8_t>(mIsCustomFallback);
     mCoverage.writeTo(writer);

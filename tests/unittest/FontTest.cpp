@@ -27,15 +27,15 @@ namespace minikin {
 TEST(FontTest, BufferTest) {
     auto minikinFont = std::make_shared<FreeTypeMinikinFontForTest>(getTestFontPath("Ascii.ttf"));
     std::shared_ptr<Font> original = Font::Builder(minikinFont).build();
-    std::vector<uint8_t> buffer = allocateBuffer<Font, writeFreeTypeMinikinFontForTest>(*original);
-    BufferWriter writer(buffer.data());
-    original->writeTo<writeFreeTypeMinikinFontForTest>(&writer);
+    std::vector<uint8_t> buffer = writeToBuffer<Font, writeFreeTypeMinikinFontForTest>(*original);
 
     BufferReader reader(buffer.data());
     std::shared_ptr<Font> font = Font::readFrom<readFreeTypeMinikinFontForTest>(&reader);
     EXPECT_EQ(minikinFont->GetFontPath(), font->typeface()->GetFontPath());
     EXPECT_EQ(original->style(), font->style());
     EXPECT_NE(nullptr, font->baseFont());
+    std::vector<uint8_t> newBuffer = writeToBuffer<Font, writeFreeTypeMinikinFontForTest>(*font);
+    EXPECT_EQ(buffer, newBuffer);
 }
 
 }  // namespace minikin

@@ -177,26 +177,29 @@ TEST(FontCollectionTest, createWithVariations) {
     }
 }
 
-std::vector<std::shared_ptr<FontCollection>> copyFontCollectionsByBuffer(
+std::vector<uint8_t> writeToBuffer(
         const std::vector<std::shared_ptr<FontCollection>>& collections) {
     BufferWriter fakeWriter(nullptr);
     FontCollection::writeVector<writeFreeTypeMinikinFontForTest>(&fakeWriter, collections);
     std::vector<uint8_t> buffer(fakeWriter.size());
     BufferWriter writer(buffer.data());
     FontCollection::writeVector<writeFreeTypeMinikinFontForTest>(&writer, collections);
-    BufferReader reader(buffer.data());
-    return FontCollection::readVector<readFreeTypeMinikinFontForTest>(&reader);
+    return buffer;
 }
 
 TEST(FontCollectionTest, bufferTest) {
     {
         std::vector<std::shared_ptr<FontCollection>> original({buildFontCollection(kVsTestFont)});
-        auto copied = copyFontCollectionsByBuffer(original);
+        std::vector<uint8_t> buffer = writeToBuffer(original);
+        BufferReader reader(buffer.data());
+        auto copied = FontCollection::readVector<readFreeTypeMinikinFontForTest>(&reader);
         EXPECT_EQ(1u, copied.size());
         expectVSGlyphsForVsTestFont(copied[0].get());
         EXPECT_EQ(original[0]->getSupportedTags(), copied[0]->getSupportedTags());
         // Id will be different.
         EXPECT_NE(original[0]->getId(), copied[0]->getId());
+        std::vector<uint8_t> newBuffer = writeToBuffer(copied);
+        EXPECT_EQ(buffer, newBuffer);
     }
     {
         // Test that FontFamily instances are shared.
@@ -204,9 +207,13 @@ TEST(FontCollectionTest, bufferTest) {
         auto fc1 = std::make_shared<FontCollection>(families);
         auto fc2 = std::make_shared<FontCollection>(families);
         std::vector<std::shared_ptr<FontCollection>> original({fc1, fc2});
-        auto copied = copyFontCollectionsByBuffer(original);
+        std::vector<uint8_t> buffer = writeToBuffer(original);
+        BufferReader reader(buffer.data());
+        auto copied = FontCollection::readVector<readFreeTypeMinikinFontForTest>(&reader);
         EXPECT_EQ(2u, copied.size());
         EXPECT_EQ(copied[0]->mFamilies[0], copied[1]->mFamilies[0]);
+        std::vector<uint8_t> newBuffer = writeToBuffer(copied);
+        EXPECT_EQ(buffer, newBuffer);
     }
     {
         // Test axes.
@@ -214,12 +221,16 @@ TEST(FontCollectionTest, bufferTest) {
         const char kMultiAxisFont[] = "MultiAxis.ttf";
         std::vector<std::shared_ptr<FontCollection>> original(
                 {buildFontCollection(kMultiAxisFont)});
-        auto copied = copyFontCollectionsByBuffer(original);
+        std::vector<uint8_t> buffer = writeToBuffer(original);
+        BufferReader reader(buffer.data());
+        auto copied = FontCollection::readVector<readFreeTypeMinikinFontForTest>(&reader);
         EXPECT_EQ(1u, copied.size());
         EXPECT_EQ(1u,
                   copied[0]->getSupportedTags().count(MinikinFont::MakeTag('w', 'd', 't', 'h')));
         EXPECT_EQ(1u,
                   copied[0]->getSupportedTags().count(MinikinFont::MakeTag('w', 'g', 'h', 't')));
+        std::vector<uint8_t> newBuffer = writeToBuffer(copied);
+        EXPECT_EQ(buffer, newBuffer);
     }
 }
 

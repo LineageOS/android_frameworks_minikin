@@ -119,7 +119,7 @@ public:
     template <TypefaceWriter typefaceWriter>
     void writeTo(BufferWriter* writer) const {
         mStyle.writeTo(writer);
-        typefaceWriter(writer, mTypeface.get());
+        typefaceWriter(writer, typeface().get());
     }
 
     const std::shared_ptr<MinikinFont>& typeface() const;

@@ -26,14 +26,32 @@ template <class T>
 std::vector<uint8_t> allocateBuffer(const T& t) {
     BufferWriter writer(nullptr);
     t.writeTo(&writer);
-    return std::vector<uint8_t>(writer.size());
+    // Fill with 0xFF for debugging.
+    return std::vector<uint8_t>(writer.size(), 0xFFu);
 }
 
 template <class T, auto arg>
 std::vector<uint8_t> allocateBuffer(const T& t) {
     BufferWriter writer(nullptr);
     t.template writeTo<arg>(&writer);
-    return std::vector<uint8_t>(writer.size());
+    // Fill with 0xFF for debugging.
+    return std::vector<uint8_t>(writer.size(), 0xFFu);
+}
+
+template <class T>
+std::vector<uint8_t> writeToBuffer(const T& t) {
+    std::vector<uint8_t> buffer = allocateBuffer(t);
+    BufferWriter writer(buffer.data());
+    t.writeTo(&writer);
+    return buffer;
+}
+
+template <class T, auto arg>
+std::vector<uint8_t> writeToBuffer(const T& t) {
+    std::vector<uint8_t> buffer = allocateBuffer<T, arg>(t);
+    BufferWriter writer(buffer.data());
+    t.template writeTo<arg>(&writer);
+    return buffer;
 }
 
 }  // namespace minikin
