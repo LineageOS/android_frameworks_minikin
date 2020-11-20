@@ -108,6 +108,8 @@ public:
 
     uint32_t getId() const;
 
+    const std::vector<std::shared_ptr<FontFamily>>& getFamilies() const { return mFamilies; }
+
 private:
     FRIEND_TEST(FontCollectionTest, bufferTest);
 
