@@ -26,6 +26,8 @@ namespace minikin {
 // TODO: Introduce LocaleId type.
 uint32_t registerLocaleList(const std::string& locales);
 
+std::string getLocaleString(uint32_t id);
+
 }  // namespace minikin
 
 #endif  // MINIKIN_LOCALE_H
