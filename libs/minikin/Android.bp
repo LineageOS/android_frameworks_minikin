@@ -29,6 +29,7 @@ cc_library {
         "Emoji.cpp",
         "FontCollection.cpp",
         "FontFamily.cpp",
+        "FontFileParser.cpp",
         "FontUtils.cpp",
         "GraphemeBreak.cpp",
         "GreedyLineBreaker.cpp",
