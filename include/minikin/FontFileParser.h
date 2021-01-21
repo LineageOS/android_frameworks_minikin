@@ -36,6 +36,7 @@ public:
 
     std::optional<uint32_t> getFontRevision() const;
     std::optional<std::string> getPostScriptName() const;
+    std::optional<bool> isPostScriptType1Font() const;
 
 protected:  // protected for testing purposes.
     static bool analyzeFontRevision(const uint8_t* head_data, size_t head_size, uint32_t* out);
