@@ -208,4 +208,12 @@ std::optional<std::string> FontFileParser::getPostScriptName() const {
     return out;
 }
 
+std::optional<bool> FontFileParser::isPostScriptType1Font() const {
+    if (!mFace) return std::optional<bool>();
+
+    HbBlob cffTable(mFace, MinikinFont::MakeTag('C', 'F', 'F', ' '));
+    HbBlob cff2Table(mFace, MinikinFont::MakeTag('C', 'F', 'F', '2'));
+    return cffTable || cff2Table;
+}
+
 }  // namespace minikin
