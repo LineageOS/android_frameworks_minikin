@@ -27,6 +27,7 @@ cc_library {
         "BoundsCache.cpp",
         "CmapCoverage.cpp",
         "Emoji.cpp",
+        "Font.cpp",
         "FontCollection.cpp",
         "FontFamily.cpp",
         "FontFileParser.cpp",
