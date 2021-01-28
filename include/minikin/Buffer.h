@@ -29,7 +29,9 @@ namespace minikin {
 // Thus the memory buffer should outlive objects created using this class.
 class BufferReader {
 public:
-    BufferReader(const void* buffer) : mData(reinterpret_cast<const uint8_t*>(buffer)), mPos(0) {}
+    BufferReader(const void* buffer) : BufferReader(buffer, 0) {}
+    BufferReader(const void* buffer, uint32_t pos)
+            : mData(reinterpret_cast<const uint8_t*>(buffer)), mPos(pos) {}
 
     template <typename T>
     static uint32_t align(uint32_t pos) {
@@ -50,6 +52,13 @@ public:
         return *data;
     }
 
+    template <typename T>
+    void skip() {
+        static_assert(std::is_pod<T>::value, "T must be a POD");
+        mPos = BufferReader::align<T>(mPos);
+        mPos += sizeof(T);
+    }
+
     // Return a pointer to an array and its number of elements.
     template <typename T>
     std::pair<const T*, uint32_t> readArray() {
@@ -61,10 +70,23 @@ public:
         return std::make_pair(data, size);
     }
 
+    template <typename T>
+    void skipArray() {
+        static_assert(std::is_pod<T>::value, "T must be a POD");
+        uint32_t size = read<uint32_t>();
+        mPos = BufferReader::align<T>(mPos);
+        mPos += size * sizeof(T);
+    }
+
     std::string_view readString() {
         auto [data, size] = readArray<char>();
         return std::string_view(data, size);
     }
+
+    void skipString() { skipArray<char>(); }
+
+    const void* data() const { return mData; }
+    size_t pos() const { return mPos; }
 
 private:
     const uint8_t* mData;
