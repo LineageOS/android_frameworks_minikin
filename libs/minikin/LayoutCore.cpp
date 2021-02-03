@@ -385,13 +385,13 @@ LayoutPiece::LayoutPiece(const U16StringPiece& textBuf, const Range& range, bool
          isRtl ? --run_ix : ++run_ix) {
         FontCollection::Run& run = items[run_ix];
         const FakedFont& fakedFont = run.fakedFont;
-        auto it = fontMap.find(fakedFont.font);
+        auto it = fontMap.find(fakedFont.font.get());
         uint8_t font_ix;
         if (it == fontMap.end()) {
             // First time to see this font.
             font_ix = mFonts.size();
             mFonts.push_back(fakedFont);
-            fontMap.insert(std::make_pair(fakedFont.font, font_ix));
+            fontMap.insert(std::make_pair(fakedFont.font.get(), font_ix));
 
             // We override some functions which are not thread safe.
             HbFontUniquePtr font(hb_font_create_sub_font(fakedFont.font->baseFont().get()));
