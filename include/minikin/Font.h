@@ -26,6 +26,7 @@
 #include "minikin/FontStyle.h"
 #include "minikin/FontVariation.h"
 #include "minikin/HbUtils.h"
+#include "minikin/LocaleList.h"
 #include "minikin/Macros.h"
 #include "minikin/MinikinFont.h"
 
@@ -91,12 +92,18 @@ public:
             return *this;
         }
 
+        Builder& setLocaleListId(uint32_t id) {
+            mLocaleListId = id;
+            return *this;
+        }
+
         std::shared_ptr<Font> build();
 
     private:
         std::shared_ptr<MinikinFont> mTypeface;
         uint16_t mWeight = static_cast<uint16_t>(FontStyle::Weight::NORMAL);
         FontStyle::Slant mSlant = FontStyle::Slant::UPRIGHT;
+        uint32_t mLocaleListId = kEmptyLocaleListId;
         bool mIsWeightSet = false;
         bool mIsSlantSet = false;
     };
@@ -110,10 +117,10 @@ public:
     using TypefaceWriter = void(BufferWriter* writer, const MinikinFont* typeface);
 
     template <TypefaceReader typefaceReader>
-    static std::shared_ptr<Font> readFrom(BufferReader* reader) {
+    static std::shared_ptr<Font> readFrom(BufferReader* reader, uint32_t localeListId) {
         FontStyle style = FontStyle(reader);
         TypefaceLoader typefaceLoader = typefaceReader(reader);
-        return std::shared_ptr<Font>(new Font(style, std::move(typefaceLoader)));
+        return std::shared_ptr<Font>(new Font(style, std::move(typefaceLoader), localeListId));
     }
 
     template <TypefaceWriter typefaceWriter>
@@ -122,6 +129,9 @@ public:
         typefaceWriter(writer, typeface().get());
     }
 
+    // This locale list is just for API compatibility. This is not used in font selection or family
+    // fallback.
+    uint32_t getLocaleListId() const { return mLocaleListId; }
     const std::shared_ptr<MinikinFont>& typeface() const;
     inline FontStyle style() const { return mStyle; }
     const HbFontUniquePtr& baseFont() const;
@@ -130,10 +140,16 @@ public:
 
 private:
     // Use Builder instead.
-    Font(std::shared_ptr<MinikinFont>&& typeface, FontStyle style, HbFontUniquePtr&& baseFont)
-            : mTypeface(std::move(typeface)), mStyle(style), mBaseFont(std::move(baseFont)) {}
-    Font(FontStyle style, TypefaceLoader&& typefaceLoader)
-            : mStyle(style), mTypefaceLoader(std::move(typefaceLoader)) {}
+    Font(std::shared_ptr<MinikinFont>&& typeface, FontStyle style, HbFontUniquePtr&& baseFont,
+         uint32_t localeListId)
+            : mTypeface(std::move(typeface)),
+              mStyle(style),
+              mBaseFont(std::move(baseFont)),
+              mLocaleListId(localeListId) {}
+    Font(FontStyle style, TypefaceLoader&& typefaceLoader, uint32_t localeListId)
+            : mStyle(style),
+              mTypefaceLoader(std::move(typefaceLoader)),
+              mLocaleListId(localeListId) {}
 
     void initTypefaceLocked() const EXCLUSIVE_LOCKS_REQUIRED(mTypefaceMutex);
 
@@ -149,6 +165,8 @@ private:
     mutable std::mutex mTypefaceMutex;
     // Non-empty if created by readFrom().
     TypefaceLoader mTypefaceLoader;
+
+    uint32_t mLocaleListId;
 
     // Stop copying and moving
     Font(Font&& o) = delete;

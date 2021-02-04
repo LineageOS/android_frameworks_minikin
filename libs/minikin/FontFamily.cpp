@@ -39,8 +39,7 @@ FontFamily::FontFamily(std::vector<std::shared_ptr<Font>>&& fonts)
         : FontFamily(FamilyVariant::DEFAULT, std::move(fonts)) {}
 
 FontFamily::FontFamily(FamilyVariant variant, std::vector<std::shared_ptr<Font>>&& fonts)
-        : FontFamily(LocaleListCache::kEmptyListId, variant, std::move(fonts),
-                     false /* isCustomFallback */) {}
+        : FontFamily(kEmptyLocaleListId, variant, std::move(fonts), false /* isCustomFallback */) {}
 
 FontFamily::FontFamily(uint32_t localeListId, FamilyVariant variant,
                        std::vector<std::shared_ptr<Font>>&& fonts, bool isCustomFallback)
@@ -68,11 +67,11 @@ FontFamily::FontFamily(uint32_t localeListId, FamilyVariant variant,
           mCoverage(std::move(coverage)),
           mCmapFmt14Coverage(std::move(cmapFmt14Coverage)) {}
 
-// Read fields other than mFonts.
+// Read fields other than mFonts, mLocaleList.
 // static
-std::shared_ptr<FontFamily> FontFamily::readFromInternal(
-        BufferReader* reader, std::vector<std::shared_ptr<Font>>&& fonts) {
-    uint32_t localeListId = LocaleListCache::readFrom(reader);
+std::shared_ptr<FontFamily> FontFamily::readFromInternal(BufferReader* reader,
+                                                         std::vector<std::shared_ptr<Font>>&& fonts,
+                                                         uint32_t localeListId) {
     // FamilyVariant is uint8_t
     static_assert(sizeof(FamilyVariant) == 1);
     FamilyVariant variant = reader->read<FamilyVariant>();
@@ -97,9 +96,13 @@ std::shared_ptr<FontFamily> FontFamily::readFromInternal(
             isCustomFallback, std::move(coverage), std::move(cmapFmt14Coverage)));
 }
 
+// static
+uint32_t FontFamily::readLocaleListInternal(BufferReader* reader) {
+    return LocaleListCache::readFrom(reader);
+}
+
 // Write fields other than mFonts.
 void FontFamily::writeToInternal(BufferWriter* writer) const {
-    LocaleListCache::writeTo(writer, mLocaleListId);
     writer->write<FamilyVariant>(mVariant);
     std::vector<AxisTag> axes(mSupportedAxes.begin(), mSupportedAxes.end());
     // Sort axes to be deterministic.
@@ -124,6 +127,9 @@ void FontFamily::writeToInternal(BufferWriter* writer) const {
     }
 }
 
+void FontFamily::writeLocaleListInternal(BufferWriter* writer) const {
+    LocaleListCache::writeTo(writer, mLocaleListId);
+}
 // Compute a matching metric between two styles - 0 is an exact match
 static int computeMatch(FontStyle style1, FontStyle style2) {
     if (style1 == style2) return 0;

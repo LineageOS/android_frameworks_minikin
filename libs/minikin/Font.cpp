@@ -35,8 +35,8 @@ namespace minikin {
 std::shared_ptr<Font> Font::Builder::build() {
     if (mIsWeightSet && mIsSlantSet) {
         // No need to read OS/2 header of the font file.
-        return std::shared_ptr<Font>(
-                new Font(std::move(mTypeface), FontStyle(mWeight, mSlant), prepareFont(mTypeface)));
+        return std::shared_ptr<Font>(new Font(std::move(mTypeface), FontStyle(mWeight, mSlant),
+                                              prepareFont(mTypeface), mLocaleListId));
     }
 
     HbFontUniquePtr font = prepareFont(mTypeface);
@@ -47,8 +47,8 @@ std::shared_ptr<Font> Font::Builder::build() {
     if (!mIsSlantSet) {
         mSlant = styleFromFont.slant();
     }
-    return std::shared_ptr<Font>(
-            new Font(std::move(mTypeface), FontStyle(mWeight, mSlant), std::move(font)));
+    return std::shared_ptr<Font>(new Font(std::move(mTypeface), FontStyle(mWeight, mSlant),
+                                          std::move(font), mLocaleListId));
 }
 
 const std::shared_ptr<MinikinFont>& Font::typeface() const {

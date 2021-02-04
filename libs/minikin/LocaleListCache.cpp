@@ -22,6 +22,7 @@
 
 #include <log/log.h>
 #include <minikin/Hasher.h>
+#include <minikin/LocaleList.h>
 #include <unicode/uloc.h>
 #include <unicode/umachine.h>
 
@@ -29,8 +30,6 @@
 #include "MinikinInternal.h"
 
 namespace minikin {
-
-const uint32_t LocaleListCache::kEmptyListId;
 
 // Returns the text length of output.
 static size_t toLanguageTag(char* output, size_t outSize, const StringPiece& locale) {
@@ -119,11 +118,11 @@ size_t LocaleListCache::LocaleVectorHash::operator()(const std::vector<Locale>& 
 }
 
 LocaleListCache::LocaleListCache() {
-    // Insert an empty locale list for mapping default locale list to kEmptyListId.
+    // Insert an empty locale list for mapping default locale list to kEmptyLocaleListId.
     // The default locale list has only one Locale and it is the unsupported locale.
     mLocaleLists.emplace_back();
-    mLocaleListLookupTable.emplace(std::vector<Locale>(), kEmptyListId);
-    mLocaleListStringCache.emplace("", kEmptyListId);
+    mLocaleListLookupTable.emplace(std::vector<Locale>(), kEmptyLocaleListId);
+    mLocaleListStringCache.emplace("", kEmptyLocaleListId);
 }
 
 uint32_t LocaleListCache::getIdInternal(const std::string& locales) {
@@ -139,7 +138,7 @@ uint32_t LocaleListCache::getIdInternal(const std::string& locales) {
 
 uint32_t LocaleListCache::getIdInternal(std::vector<Locale>&& locales) {
     if (locales.empty()) {
-        return kEmptyListId;
+        return kEmptyLocaleListId;
     }
     const auto& it = mLocaleListLookupTable.find(locales);
     if (it != mLocaleListLookupTable.end()) {

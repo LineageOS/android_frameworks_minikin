@@ -29,11 +29,6 @@ namespace minikin {
 
 class LocaleListCache {
 public:
-    // A special ID for the empty locale list.
-    // This value must be 0 since the empty locale list is inserted into mLocaleLists by
-    // default.
-    const static uint32_t kEmptyListId = 0;
-
     // A special ID for the invalid locale list.
     const static uint32_t kInvalidListId = (uint32_t)(-1);
 

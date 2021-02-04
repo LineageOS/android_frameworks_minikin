@@ -40,17 +40,19 @@ public:
 
     template <Font::TypefaceReader typefaceReader>
     static std::shared_ptr<FontFamily> readFrom(BufferReader* reader) {
+        uint32_t localeListId = readLocaleListInternal(reader);
         uint32_t fontsCount = reader->read<uint32_t>();
         std::vector<std::shared_ptr<Font>> fonts;
         fonts.reserve(fontsCount);
         for (uint32_t i = 0; i < fontsCount; i++) {
-            fonts.emplace_back(Font::readFrom<typefaceReader>(reader));
+            fonts.emplace_back(Font::readFrom<typefaceReader>(reader, localeListId));
         }
-        return readFromInternal(reader, std::move(fonts));
+        return readFromInternal(reader, std::move(fonts), localeListId);
     }
 
     template <Font::TypefaceWriter typefaceWriter>
     void writeTo(BufferWriter* writer) const {
+        writeLocaleListInternal(writer);
         writer->write<uint32_t>(mFonts.size());
         for (const std::shared_ptr<Font>& font : mFonts) {
             font->writeTo<typefaceWriter>(writer);
@@ -93,8 +95,11 @@ private:
                bool isCustomFallback, SparseBitSet&& coverage,
                std::vector<std::unique_ptr<SparseBitSet>>&& cmapFmt14Coverage);
 
+    static uint32_t readLocaleListInternal(BufferReader* reader);
     static std::shared_ptr<FontFamily> readFromInternal(BufferReader* reader,
-                                                        std::vector<std::shared_ptr<Font>>&& fonts);
+                                                        std::vector<std::shared_ptr<Font>>&& fonts,
+                                                        uint32_t localeListId);
+    void writeLocaleListInternal(BufferWriter* writer) const;
     void writeToInternal(BufferWriter* writer) const;
 
     void computeCoverage();

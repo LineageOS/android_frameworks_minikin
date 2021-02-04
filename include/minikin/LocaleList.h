@@ -21,6 +21,10 @@
 
 namespace minikin {
 
+// A special ID for the empty locale list.
+// This value must be 0 since the empty locale list is inserted into mLocaleLists by default.
+const static uint32_t kEmptyLocaleListId = 0;
+
 // Looks up a locale list from an internal cache and returns its ID.
 // If the passed locale list is not in the cache, registers it and returns newly assigned ID.
 // TODO: Introduce LocaleId type.

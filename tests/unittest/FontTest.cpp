@@ -30,7 +30,8 @@ TEST(FontTest, BufferTest) {
     std::vector<uint8_t> buffer = writeToBuffer<Font, writeFreeTypeMinikinFontForTest>(*original);
 
     BufferReader reader(buffer.data());
-    std::shared_ptr<Font> font = Font::readFrom<readFreeTypeMinikinFontForTest>(&reader);
+    std::shared_ptr<Font> font =
+            Font::readFrom<readFreeTypeMinikinFontForTest>(&reader, kEmptyLocaleListId);
     EXPECT_EQ(minikinFont->GetFontPath(), font->typeface()->GetFontPath());
     EXPECT_EQ(original->style(), font->style());
     EXPECT_NE(nullptr, font->baseFont());
