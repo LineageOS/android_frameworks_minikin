@@ -151,21 +151,23 @@ static FontFakery computeFakery(FontStyle wanted, FontStyle actual) {
 }
 
 FakedFont FontFamily::getClosestMatch(FontStyle style) const {
-    Font* bestFont = mFonts[0].get();
+    int bestIndex = 0;
+    Font* bestFont = mFonts[bestIndex].get();
     int bestMatch = computeMatch(bestFont->style(), style);
     for (size_t i = 1; i < mFonts.size(); i++) {
         Font* font = mFonts[i].get();
         int match = computeMatch(font->style(), style);
         if (i == 0 || match < bestMatch) {
             bestFont = font;
+            bestIndex = i;
             bestMatch = match;
         }
     }
-    return FakedFont{bestFont, computeFakery(style, bestFont->style())};
+    return FakedFont{mFonts[bestIndex], computeFakery(style, bestFont->style())};
 }
 
 void FontFamily::computeCoverage() {
-    const Font* font = getClosestMatch(FontStyle()).font;
+    const std::shared_ptr<Font>& font = getClosestMatch(FontStyle()).font;
     HbBlob cmapTable(font->baseFont(), MinikinFont::MakeTag('c', 'm', 'a', 'p'));
     if (cmapTable.get() == nullptr) {
         ALOGE("Could not get cmap table size!\n");

@@ -68,6 +68,7 @@ public:
     // API's for enumerating the fonts in a family. These don't guarantee any particular order
     size_t getNumFonts() const { return mFonts.size(); }
     const Font* getFont(size_t index) const { return mFonts[index].get(); }
+    const std::shared_ptr<Font>& getFontRef(size_t index) const { return mFonts[index]; }
     FontStyle getStyle(size_t index) const { return mFonts[index]->style(); }
     bool isColorEmojiFamily() const { return mIsColorEmoji; }
     const std::unordered_set<AxisTag>& supportedAxes() const { return mSupportedAxes; }

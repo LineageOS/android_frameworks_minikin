@@ -102,8 +102,8 @@ std::vector<FontCollection::Run> itemize(const std::shared_ptr<FontCollection>& 
 
 // Utility function to obtain font path associated with run.
 std::string getFontName(const FontCollection::Run& run) {
-    EXPECT_NE(nullptr, run.fakedFont.font);
-    return getBasename(run.fakedFont.font->typeface()->GetFontPath());
+    EXPECT_NE(nullptr, run.fakedFont.font.get());
+    return getBasename(run.fakedFont.font.get()->typeface()->GetFontPath());
 }
 
 // Utility function to obtain LocaleList from string.
@@ -514,13 +514,13 @@ TEST(FontCollectionItemizeTest, itemize_variationSelector) {
     ASSERT_EQ(1U, runs.size());
     EXPECT_EQ(0, runs[0].start);
     EXPECT_EQ(1, runs[0].end);
-    EXPECT_TRUE(runs[0].fakedFont.font == nullptr || kLatinFont == getFontName(runs[0]));
+    EXPECT_TRUE(runs[0].fakedFont.font.get() == nullptr || kLatinFont == getFontName(runs[0]));
 
     runs = itemize(collection, "U+FE00", "zh-Hant");
     ASSERT_EQ(1U, runs.size());
     EXPECT_EQ(0, runs[0].start);
     EXPECT_EQ(1, runs[0].end);
-    EXPECT_TRUE(runs[0].fakedFont.font == nullptr || kLatinFont == getFontName(runs[0]));
+    EXPECT_TRUE(runs[0].fakedFont.font.get() == nullptr || kLatinFont == getFontName(runs[0]));
 
     // First font family (Regular.ttf) supports U+203C but doesn't support U+203C U+FE0F.
     // Emoji.ttf font supports U+203C U+FE0F.  Emoji.ttf should be selected.
@@ -651,13 +651,13 @@ TEST(FontCollectionItemizeTest, itemize_variationSelectorSupplement) {
     ASSERT_EQ(1U, runs.size());
     EXPECT_EQ(0, runs[0].start);
     EXPECT_EQ(2, runs[0].end);
-    EXPECT_TRUE(runs[0].fakedFont.font == nullptr || kLatinFont == getFontName(runs[0]));
+    EXPECT_TRUE(runs[0].fakedFont.font.get() == nullptr || kLatinFont == getFontName(runs[0]));
 
     runs = itemize(collection, "U+E0100", "zh-Hant");
     ASSERT_EQ(1U, runs.size());
     EXPECT_EQ(0, runs[0].start);
     EXPECT_EQ(2, runs[0].end);
-    EXPECT_TRUE(runs[0].fakedFont.font == nullptr || kLatinFont == getFontName(runs[0]));
+    EXPECT_TRUE(runs[0].fakedFont.font.get() == nullptr || kLatinFont == getFontName(runs[0]));
 }
 
 TEST(FontCollectionItemizeTest, itemize_no_crash) {
@@ -952,14 +952,15 @@ TEST(FontCollectionItemizeTest, itemize_LocaleScore) {
         // Do itemize
         auto runs = itemize(collection, "U+9AA8", testCase.userPreferredLocale);
         ASSERT_EQ(1U, runs.size());
-        ASSERT_NE(nullptr, runs[0].fakedFont.font);
+        ASSERT_NE(nullptr, runs[0].fakedFont.font.get());
 
         // First family doesn't support U+9AA8 and others support it, so the first font should not
         // be selected.
-        EXPECT_NE(firstFamilyMinikinFont.get(), runs[0].fakedFont.font->typeface().get());
+        EXPECT_NE(firstFamilyMinikinFont.get(), runs[0].fakedFont.font.get()->typeface().get());
 
         // Lookup used font family by MinikinFont*.
-        const int usedLocaleIndex = fontLocaleIdxMap[runs[0].fakedFont.font->typeface().get()];
+        const int usedLocaleIndex =
+                fontLocaleIdxMap[runs[0].fakedFont.font.get()->typeface().get()];
         EXPECT_EQ(testCase.selectedFontIndex, usedLocaleIndex);
     }
 }
@@ -1520,10 +1521,10 @@ TEST(FontCollectionItemizeTest, itemizeShouldKeepOrderForVS) {
     // Both fontA/fontB support U+35A8 but don't support U+35A8 U+E0100. The first font should be
     // selected.
     auto runs = itemize(collection, "U+35A8 U+E0100");
-    EXPECT_EQ(familyA->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(familyA->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(reversedCollection, "U+35A8 U+E0100");
-    EXPECT_EQ(familyB->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(familyB->getFont(0), runs[0].fakedFont.font.get());
 }
 
 // For b/29585939
@@ -1543,10 +1544,10 @@ TEST(FontCollectionItemizeTest, itemizeShouldKeepOrderForVS2) {
     // Both hasCmapFormat14Font/noCmapFormat14Font support U+5380 but don't support U+5380 U+E0100.
     // The first font should be selected.
     auto runs = itemize(collection, "U+5380 U+E0100");
-    EXPECT_EQ(hasCmapFormat14Family->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(hasCmapFormat14Family->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(reversedCollection, "U+5380 U+E0100");
-    EXPECT_EQ(noCmapFormat14Family->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(noCmapFormat14Family->getFont(0), runs[0].fakedFont.font.get());
 }
 
 TEST(FontCollectionItemizeTest, colorEmojiSelectionTest) {
@@ -1560,44 +1561,44 @@ TEST(FontCollectionItemizeTest, colorEmojiSelectionTest) {
     // Both textEmojiFamily and colorEmojiFamily supports U+203C and U+23E9.
     // U+203C is text default emoji, and U+23E9 is color default emoji.
     auto runs = itemize(collection, "U+203C", "en-US,en-Zsym");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "en-US,en-Zsym");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(collection, "U+203C", "en-US,en-Zsye");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "en-US,en-Zsye");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(collection, "U+203C", "ja-Zsym-JP");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "ja-Zsym-JP");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(collection, "U+203C", "ja-Zsye-JP");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "ja-Zsye-JP");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(collection, "U+203C", "ja-JP-u-em-text");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "ja-JP-u-em-text");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(collection, "U+203C", "ja-JP-u-em-emoji");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "ja-JP-u-em-emoji");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(collection, "U+203C", "ja-JP,und-Zsym");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "ja-JP,und-Zsym");
-    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(textEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 
     runs = itemize(collection, "U+203C", "ja-JP,und-Zsye");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "U+23E9", "ja-JP,und-Zsye");
-    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(colorEmojiFamily->getFont(0), runs[0].fakedFont.font.get());
 }
 
 TEST(FontCollectionItemizeTest, customFallbackTest) {
@@ -1611,11 +1612,11 @@ TEST(FontCollectionItemizeTest, customFallbackTest) {
     auto collection = std::make_shared<FontCollection>(families);
 
     auto runs = itemize(collection, "'a'", "");
-    EXPECT_EQ(customFallbackFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(customFallbackFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "'a'", "en-US");
-    EXPECT_EQ(customFallbackFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(customFallbackFamily->getFont(0), runs[0].fakedFont.font.get());
     runs = itemize(collection, "'a'", "ja-JP");
-    EXPECT_EQ(customFallbackFamily->getFont(0), runs[0].fakedFont.font);
+    EXPECT_EQ(customFallbackFamily->getFont(0), runs[0].fakedFont.font.get());
 }
 
 }  // namespace minikin

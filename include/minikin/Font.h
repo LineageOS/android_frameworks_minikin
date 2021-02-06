@@ -59,7 +59,10 @@ struct FakedFont {
     inline bool operator!=(const FakedFont& o) const { return !(*this == o); }
 
     // ownership is the enclosing FontCollection
-    const Font* font;
+    // FakedFont will be stored in the LayoutCache. It is not a good idea too keep font instance
+    // even if the enclosing FontCollection, i.e. Typeface is GC-ed. The layout cache is only
+    // purged when it is overflown, thus intentionally keep only reference.
+    const std::shared_ptr<Font>& font;
     FontFakery fakery;
 };
 

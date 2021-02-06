@@ -540,7 +540,7 @@ std::vector<FontCollection::Run> FontCollection::itemize(U16StringPiece text, Fo
 
     if (result.size() > runMax) {
         // The itemization has terminated since it reaches the runMax. Remove last unfinalized runs.
-        result.resize(runMax);
+        return std::vector<Run>(result.begin(), result.begin() + runMax);
     }
     return result;
 }
