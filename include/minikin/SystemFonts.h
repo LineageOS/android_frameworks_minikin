@@ -43,6 +43,18 @@ public:
         return getInstance().registerDefaultInternal(fc);
     }
 
+    using FontMapDeleter = std::function<void()>;
+
+    static void addFontMap(std::shared_ptr<FontCollection>&& collections) {
+        return getInstance().addFontMapInternal(std::move(collections));
+    }
+
+    // This obtains a mutex inside, so do not call this method inside callback.
+    static void getFontMap(
+            std::function<void(const std::vector<std::shared_ptr<FontCollection>>&)> func) {
+        return getInstance().getFontMapInternal(func);
+    }
+
 protected:
     // Visible for testing purposes.
     SystemFonts() {}
@@ -60,11 +72,24 @@ protected:
         mDefaultFallback = fc;
     }
 
+    void addFontMapInternal(std::shared_ptr<FontCollection>&& collections) {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mCollections.emplace_back(std::move(collections));
+    }
+
+    void getFontMapInternal(
+            std::function<void(const std::vector<std::shared_ptr<FontCollection>>&)> func) {
+        std::lock_guard<std::mutex> lock(mMutex);
+        func(mCollections);
+    }
+
 private:
     static SystemFonts& getInstance();
 
     std::map<std::string, std::shared_ptr<FontCollection>> mSystemFallbacks GUARDED_BY(mMutex);
     std::shared_ptr<FontCollection> mDefaultFallback GUARDED_BY(mMutex);
+    std::vector<std::shared_ptr<FontCollection>> mCollections GUARDED_BY(mMutex);
+
     std::mutex mMutex;
 };
 
