@@ -355,8 +355,9 @@ LayoutPiece::LayoutPiece(const U16StringPiece& textBuf, const Range& range, bool
     mPoints.reserve(count);
 
     HbBufferUniquePtr buffer(hb_buffer_create());
-    std::vector<FontCollection::Run> items = paint.font->itemize(
-            textBuf.substr(range), paint.fontStyle, paint.localeListId, paint.familyVariant);
+    U16StringPiece substr = textBuf.substr(range);
+    std::vector<FontCollection::Run> items =
+            paint.font->itemize(substr, paint.fontStyle, paint.localeListId, paint.familyVariant);
 
     std::vector<hb_feature_t> features;
     // Disable default-on non-required ligature features if letter-spacing
@@ -384,7 +385,7 @@ LayoutPiece::LayoutPiece(const U16StringPiece& textBuf, const Range& range, bool
          isRtl ? run_ix >= 0 : run_ix < static_cast<int>(items.size());
          isRtl ? --run_ix : ++run_ix) {
         FontCollection::Run& run = items[run_ix];
-        const FakedFont& fakedFont = run.fakedFont;
+        FakedFont fakedFont = paint.font->getBestFont(substr, run, paint.fontStyle);
         auto it = fontMap.find(fakedFont.font.get());
         uint8_t font_ix;
         if (it == fontMap.end()) {

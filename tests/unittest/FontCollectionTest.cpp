@@ -234,4 +234,87 @@ TEST(FontCollectionTest, bufferTest) {
     }
 }
 
+TEST(FontCollectionTest, FamilyMatchResultBuilderTest) {
+    using Builder = FontCollection::FamilyMatchResult::Builder;
+    EXPECT_TRUE(Builder().empty());
+    EXPECT_EQ(0u, Builder().size());
+    EXPECT_EQ(1u, Builder().add(5).size());
+    EXPECT_EQ(2u, Builder().add(5).add(4).size());
+
+    // Reset
+    EXPECT_TRUE(Builder().add(5).reset().empty());
+    EXPECT_EQ(0u, Builder().add(5).reset().size());
+}
+
+TEST(FontCollectionTest, FamilyMatchResultTest) {
+    using Builder = FontCollection::FamilyMatchResult::Builder;
+
+    auto r = Builder().build();
+    EXPECT_EQ(0u, r.size());
+    EXPECT_TRUE(r.empty());
+
+    r = Builder().add(1).build();
+    EXPECT_EQ(1u, r.size());
+    EXPECT_FALSE(r.empty());
+    EXPECT_EQ(1u, r[0]);
+
+    r = Builder().add(1).add(2).build();
+    EXPECT_EQ(2u, r.size());
+    EXPECT_FALSE(r.empty());
+    EXPECT_EQ(1u, r[0]);
+    EXPECT_EQ(2u, r[1]);
+}
+
+TEST(FontCollectionTest, FamilyMatchResultTest_BuilderHoldeFirst7) {
+    auto b = FontCollection::FamilyMatchResult::Builder();
+    for (uint8_t i = 0; i < 128; ++i) {
+        b.add(i);
+    }
+    auto r = b.build();
+    EXPECT_EQ(7u, r.size());
+    EXPECT_FALSE(r.empty());
+    EXPECT_EQ(0u, r[0]);
+    EXPECT_EQ(1u, r[1]);
+    EXPECT_EQ(2u, r[2]);
+    EXPECT_EQ(3u, r[3]);
+    EXPECT_EQ(4u, r[4]);
+    EXPECT_EQ(5u, r[5]);
+    EXPECT_EQ(6u, r[6]);
+}
+
+TEST(FontCollectionTest, FamilyMatchResultTest_iterator) {
+    auto b = FontCollection::FamilyMatchResult::Builder();
+    for (uint8_t i = 0; i < 7; ++i) {
+        b.add(i);
+    }
+    auto r = b.build();
+    EXPECT_EQ(7u, r.size());
+    EXPECT_FALSE(r.empty());
+    int i = 0;
+    for (auto v : r) {
+        EXPECT_EQ(i, v);
+        i++;
+    }
+}
+
+TEST(FontCollectionTest, FamilyMatchResultTest_intersect) {
+    using Builder = FontCollection::FamilyMatchResult::Builder;
+
+    EXPECT_EQ(Builder().add(1).add(2).add(3).build(),
+              FontCollection::FamilyMatchResult::intersect(Builder().add(1).add(2).add(3).build(),
+                                                           Builder().add(1).add(2).add(3).build()));
+
+    EXPECT_EQ(Builder().build(),
+              FontCollection::FamilyMatchResult::intersect(Builder().add(1).add(2).add(3).build(),
+                                                           Builder().build()));
+
+    EXPECT_EQ(Builder().build(),
+              FontCollection::FamilyMatchResult::intersect(Builder().add(2).add(4).add(6).build(),
+                                                           Builder().add(1).add(3).add(5).build()));
+
+    EXPECT_EQ(Builder().add(1).add(3).build(),
+              FontCollection::FamilyMatchResult::intersect(Builder().add(1).add(2).add(3).build(),
+                                                           Builder().add(1).add(3).add(5).build()));
+}
+
 }  // namespace minikin
