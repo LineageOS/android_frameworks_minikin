@@ -1670,4 +1670,12 @@ TEST(FontCollectionItemizeTest, emojiFallback) {
               itemizeEmojiAndFontPostScriptName("U+1F9B2 U+200D U+1F9B3 U+200D U+1F9B4"));
 }
 
+TEST(FontCollectionItemizeTest, emojiFlagFallback) {
+    // If the OverrideEmojiFont supports U+1F1E6 U+1F1E6, use that font.
+    EXPECT_EQ("OverrideEmojiFont", itemizeEmojiAndFontPostScriptName("U+1F1E6 U+1F1E6"));
+
+    // Even if the OverrideEmojiFont directs to .notdef (i.e. Tofu glyph) for the sequence, use it.
+    EXPECT_EQ("OverrideEmojiFont", itemizeEmojiAndFontPostScriptName("U+1F1E6 U+1F1E7"));
+}
+
 }  // namespace minikin

@@ -55,7 +55,14 @@
     <GlyphID id="19" name="LigaForm4"/>
     <GlyphID id="20" name="LigaForm5"/>
     -->
+    <GlyphID id="21" name="LigaForm6"/>
+    <!--
+      Following glyph is removed from EmojiBase.ttf for verifying fallback.
+    <GlyphID id="22" name="LigaForm7"/>
+    -->
 
+    <GlyphID id="23" name="U+1F1E6"/>
+    <GlyphID id="24" name="U+1F1E7"/>
   </GlyphOrder>
 
   <head>
@@ -174,6 +181,8 @@
   <hmtx>
     <mtx name=".notdef" width="500" lsb="93"/>
     <mtx name="U+200D" width="500" lsb="93"/>
+    <mtx name="U+1F1E6" width="500" lsb="93"/>
+    <mtx name="U+1F1E7" width="500" lsb="93"/>
     <mtx name="U+1F3FB" width="500" lsb="93"/>
     <mtx name="U+1F3FC" width="500" lsb="93"/>
     <mtx name="U+1F9B0" width="500" lsb="93"/>
@@ -203,12 +212,19 @@
     <mtx name="LigaForm4" width="500" lsb="93"/>
     <mtx name="LigaForm5" width="500" lsb="93"/>
     -->
+    <mtx name="LigaForm6" width="500" lsb="93"/>
+    <!--
+      Following glyph is removed from EmojiBase.ttf for verifying fallback.
+    <mtx name="LigaForm7" width="500" lsb="93"/>
+    -->
   </hmtx>
 
   <cmap>
     <tableVersion version="0"/>
     <cmap_format_12 format="12" reserved="0" length="3" nGroups="6" platformID="3" platEncID="1" language="0">
       <map code="0x200D" name="U+200D" />
+      <map code="0x1F1E6" name="U+1F1E6" />
+      <map code="0x1F1E7" name="U+1F1E7" />
       <map code="0x1F3FB" name="U+1F3FB" />
       <map code="0x1F3FC" name="U+1F3FC" />
       <map code="0x1F9B0" name="U+1F9B0" />
@@ -251,6 +267,24 @@
       <instructions><assembly></assembly></instructions>
     </TTGlyph>
     <TTGlyph name="U+200D" xMin="0" yMin="0" xMax="100" yMax="100">
+      <contour>
+        <pt x="0" y="0" on="1" />
+        <pt x="100" y="0" on="1" />
+        <pt x="100" y="100" on="1" />
+        <pt x="0" y="100" on="1" />
+      </contour>
+      <instructions><assembly></assembly></instructions>
+    </TTGlyph>
+    <TTGlyph name="U+1F1E6" xMin="0" yMin="0" xMax="100" yMax="100">
+      <contour>
+        <pt x="0" y="0" on="1" />
+        <pt x="100" y="0" on="1" />
+        <pt x="100" y="100" on="1" />
+        <pt x="0" y="100" on="1" />
+      </contour>
+      <instructions><assembly></assembly></instructions>
+    </TTGlyph>
+    <TTGlyph name="U+1F1E7" xMin="0" yMin="0" xMax="100" yMax="100">
       <contour>
         <pt x="0" y="0" on="1" />
         <pt x="100" y="0" on="1" />
@@ -383,6 +417,19 @@
     <TTGlyph name="LigaForm4">
     <TTGlyph name="LigaForm5">
     -->
+    <TTGlyph name="LigaForm6" xMin="0" yMin="0" xMax="100" yMax="100">
+      <contour>
+        <pt x="0" y="0" on="1" />
+        <pt x="100" y="0" on="1" />
+        <pt x="100" y="100" on="1" />
+        <pt x="0" y="100" on="1" />
+      </contour>
+      <instructions><assembly></assembly></instructions>
+    </TTGlyph>
+    <!--
+      Following glyph is removed from EmojiBase.ttf for verifying fallback.
+    <TTGlyph name="LigaForm7">
+    -->
   </glyf>
 
   <name>
@@ -463,6 +510,10 @@
               <Ligature components="U+1F3FB" glyph="LigaForm3"/>
             </LigatureSet>
           -->
+          <LigatureSet glyph="U+1F1E6">
+            <Ligature components="U+1F1E6" glyph="LigaForm6"/>
+            <Ligature components="U+1F1E7" glyph=".notdef"/>
+          </LigatureSet>
         </LigatureSubst>
       </Lookup>
     </LookupList>
