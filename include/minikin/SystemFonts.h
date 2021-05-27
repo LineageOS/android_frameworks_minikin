@@ -55,6 +55,10 @@ public:
         return getInstance().getFontMapInternal(func);
     }
 
+    static void getFontSet(std::function<void(const std::vector<std::shared_ptr<Font>>&)> func) {
+        return getInstance().getFontSetInternal(func);
+    }
+
 protected:
     // Visible for testing purposes.
     SystemFonts() {}
@@ -83,12 +87,23 @@ protected:
         func(mCollections);
     }
 
+    void getFontSetInternal(std::function<void(const std::vector<std::shared_ptr<Font>>&)> func) {
+        std::lock_guard<std::mutex> lock(mMutex);
+        if (!mFonts) {
+            buildFontSetLocked();
+        }
+        func(mFonts.value());
+    }
+
 private:
     static SystemFonts& getInstance();
+
+    void buildFontSetLocked() EXCLUSIVE_LOCKS_REQUIRED(mMutex);
 
     std::map<std::string, std::shared_ptr<FontCollection>> mSystemFallbacks GUARDED_BY(mMutex);
     std::shared_ptr<FontCollection> mDefaultFallback GUARDED_BY(mMutex);
     std::vector<std::shared_ptr<FontCollection>> mCollections GUARDED_BY(mMutex);
+    std::optional<std::vector<std::shared_ptr<Font>>> mFonts GUARDED_BY(mMutex);
 
     std::mutex mMutex;
 };

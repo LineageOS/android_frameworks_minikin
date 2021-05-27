@@ -36,4 +36,22 @@ std::shared_ptr<FontCollection> SystemFonts::findFontCollectionInternal(
     return mDefaultFallback;
 }
 
+void SystemFonts::buildFontSetLocked() {
+    std::unordered_set<FontFamily*> uniqueFamilies;
+
+    for (const auto& collection : mCollections) {
+        for (const auto& family : collection->getFamilies()) {
+            uniqueFamilies.insert(family.get());
+        }
+    }
+
+    std::vector<std::shared_ptr<Font>> result;
+    for (const auto family : uniqueFamilies) {
+        for (size_t i = 0; i < family->getNumFonts(); ++i) {
+            result.push_back(family->getFontRef(i));
+        }
+    }
+    mFonts = std::move(result);
+}
+
 }  // namespace minikin
