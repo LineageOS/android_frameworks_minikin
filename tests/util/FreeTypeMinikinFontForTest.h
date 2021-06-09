@@ -66,7 +66,7 @@ private:
 
 void writeFreeTypeMinikinFontForTest(BufferWriter* writer, const MinikinFont* typeface);
 
-Font::TypefaceLoader readFreeTypeMinikinFontForTest(BufferReader* reader);
+Font::TypefaceLoader* readFreeTypeMinikinFontForTest(BufferReader* reader);
 
 }  // namespace minikin
 
