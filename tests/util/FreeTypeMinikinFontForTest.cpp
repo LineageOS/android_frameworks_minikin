@@ -116,9 +116,14 @@ void writeFreeTypeMinikinFontForTest(BufferWriter* writer, const MinikinFont* ty
     writer->writeString(typeface->GetFontPath());
 }
 
-Font::TypefaceLoader readFreeTypeMinikinFontForTest(BufferReader* reader) {
-    std::string fontPath(reader->readString());
-    return [fontPath]() { return std::make_shared<FreeTypeMinikinFontForTest>(fontPath); };
+std::shared_ptr<MinikinFont> loadFreeTypeMinikinFontForTest(BufferReader reader) {
+    std::string fontPath(reader.readString());
+    return std::make_shared<FreeTypeMinikinFontForTest>(fontPath);
+}
+
+Font::TypefaceLoader* readFreeTypeMinikinFontForTest(BufferReader* reader) {
+    reader->skipString();  // fontPath
+    return &loadFreeTypeMinikinFontForTest;
 }
 
 }  // namespace minikin

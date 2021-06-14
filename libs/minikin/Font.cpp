@@ -69,7 +69,7 @@ const HbFontUniquePtr& Font::baseFont() const {
 void Font::initTypefaceLocked() const {
     if (mTypeface) return;
     MINIKIN_ASSERT(mTypefaceLoader, "mTypefaceLoader should not be empty when mTypeface is null");
-    mTypeface = mTypefaceLoader();
+    mTypeface = mTypefaceLoader(mTypefaceMetadataReader);
 }
 
 // static

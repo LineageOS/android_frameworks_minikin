@@ -17,7 +17,6 @@
 #ifndef MINIKIN_FONT_H
 #define MINIKIN_FONT_H
 
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <unordered_set>
@@ -112,18 +111,20 @@ public:
     };
 
     // Type for functions to load MinikinFont lazily.
-    using TypefaceLoader = std::function<std::shared_ptr<MinikinFont>()>;
-    // Type for functions to read MinikinFont metadata and construct
+    using TypefaceLoader = std::shared_ptr<MinikinFont>(BufferReader reader);
+    // Type for functions to read MinikinFont metadata and return
     // TypefaceLoader.
-    using TypefaceReader = TypefaceLoader(BufferReader* reader);
+    using TypefaceReader = TypefaceLoader*(BufferReader* reader);
     // Type for functions to write MinikinFont metadata.
     using TypefaceWriter = void(BufferWriter* writer, const MinikinFont* typeface);
 
     template <TypefaceReader typefaceReader>
     static std::shared_ptr<Font> readFrom(BufferReader* reader, uint32_t localeListId) {
         FontStyle style = FontStyle(reader);
-        TypefaceLoader typefaceLoader = typefaceReader(reader);
-        return std::shared_ptr<Font>(new Font(style, std::move(typefaceLoader), localeListId));
+        BufferReader typefaceMetadataReader = *reader;
+        TypefaceLoader* typefaceLoader = typefaceReader(reader);
+        return std::shared_ptr<Font>(
+                new Font(style, typefaceMetadataReader, typefaceLoader, localeListId));
     }
 
     template <TypefaceWriter typefaceWriter>
@@ -138,6 +139,7 @@ public:
     const std::shared_ptr<MinikinFont>& typeface() const;
     inline FontStyle style() const { return mStyle; }
     const HbFontUniquePtr& baseFont() const;
+    BufferReader typefaceMetadataReader() const { return mTypefaceMetadataReader; }
 
     std::unordered_set<AxisTag> getSupportedAxes() const;
 
@@ -148,10 +150,14 @@ private:
             : mTypeface(std::move(typeface)),
               mStyle(style),
               mBaseFont(std::move(baseFont)),
+              mTypefaceLoader(nullptr),
+              mTypefaceMetadataReader(nullptr),
               mLocaleListId(localeListId) {}
-    Font(FontStyle style, TypefaceLoader&& typefaceLoader, uint32_t localeListId)
+    Font(FontStyle style, BufferReader typefaceMetadataReader, TypefaceLoader* typefaceLoader,
+         uint32_t localeListId)
             : mStyle(style),
-              mTypefaceLoader(std::move(typefaceLoader)),
+              mTypefaceLoader(typefaceLoader),
+              mTypefaceMetadataReader(typefaceMetadataReader),
               mLocaleListId(localeListId) {}
 
     void initTypefaceLocked() const EXCLUSIVE_LOCKS_REQUIRED(mTypefaceMutex);
@@ -166,8 +172,10 @@ private:
     mutable HbFontUniquePtr mBaseFont GUARDED_BY(mTypefaceMutex);
 
     mutable std::mutex mTypefaceMutex;
-    // Non-empty if created by readFrom().
-    TypefaceLoader mTypefaceLoader;
+    // Non-null if created by readFrom().
+    TypefaceLoader* mTypefaceLoader;
+    // Non-null if created by readFrom().
+    BufferReader mTypefaceMetadataReader;
 
     uint32_t mLocaleListId;
 
