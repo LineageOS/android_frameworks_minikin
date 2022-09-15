@@ -42,7 +42,7 @@ static size_t toLanguageTag(char* output, size_t outSize, const StringPiece& loc
     size_t outLength = 0;
     UErrorCode uErr = U_ZERO_ERROR;
     outLength = uloc_canonicalize(localeString.c_str(), output, outSize, &uErr);
-    if (U_FAILURE(uErr)) {
+    if (U_FAILURE(uErr) || (uErr == U_STRING_NOT_TERMINATED_WARNING)) {
         // unable to build a proper locale identifier
         ALOGD("uloc_canonicalize(\"%s\") failed: %s", localeString.c_str(), u_errorName(uErr));
         output[0] = '\0';
@@ -68,7 +68,7 @@ static size_t toLanguageTag(char* output, size_t outSize, const StringPiece& loc
 
     uErr = U_ZERO_ERROR;
     outLength = uloc_toLanguageTag(likelyChars, output, outSize, FALSE, &uErr);
-    if (U_FAILURE(uErr)) {
+    if (U_FAILURE(uErr) || (uErr == U_STRING_NOT_TERMINATED_WARNING)) {
         // unable to build a proper locale identifier
         ALOGD("uloc_toLanguageTag(\"%s\") failed: %s", likelyChars, u_errorName(uErr));
         output[0] = '\0';
