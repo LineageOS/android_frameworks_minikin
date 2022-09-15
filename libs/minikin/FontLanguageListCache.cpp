@@ -39,7 +39,7 @@ static size_t toLanguageTag(char* output, size_t outSize, const std::string& loc
     size_t outLength = 0;
     UErrorCode uErr = U_ZERO_ERROR;
     outLength = uloc_canonicalize(locale.c_str(), output, outSize, &uErr);
-    if (U_FAILURE(uErr)) {
+    if (U_FAILURE(uErr) || (uErr == U_STRING_NOT_TERMINATED_WARNING)) {
         // unable to build a proper language identifier
         ALOGD("uloc_canonicalize(\"%s\") failed: %s", locale.c_str(), u_errorName(uErr));
         output[0] = '\0';
@@ -64,7 +64,7 @@ static size_t toLanguageTag(char* output, size_t outSize, const std::string& loc
 
     uErr = U_ZERO_ERROR;
     outLength = uloc_toLanguageTag(likelyChars, output, outSize, FALSE, &uErr);
-    if (U_FAILURE(uErr)) {
+    if (U_FAILURE(uErr) || (uErr == U_STRING_NOT_TERMINATED_WARNING)) {
         // unable to build a proper language identifier
         ALOGD("uloc_toLanguageTag(\"%s\") failed: %s", likelyChars, u_errorName(uErr));
         output[0] = '\0';
