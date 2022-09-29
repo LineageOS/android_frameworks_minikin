@@ -55,7 +55,7 @@ static size_t toLanguageTag(char* output, size_t outSize, const std::string& loc
     char likelyChars[ULOC_FULLNAME_CAPACITY];
     uErr = U_ZERO_ERROR;
     uloc_addLikelySubtags(output, likelyChars, ULOC_FULLNAME_CAPACITY, &uErr);
-    if (U_FAILURE(uErr)) {
+    if (U_FAILURE(uErr) || (uErr == U_STRING_NOT_TERMINATED_WARNING)) {
         // unable to build a proper language identifier
         ALOGD("uloc_addLikelySubtags(\"%s\") failed: %s", output, u_errorName(uErr));
         output[0] = '\0';
